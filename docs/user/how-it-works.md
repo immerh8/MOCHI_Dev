@@ -3,7 +3,7 @@
 This page explains, in plain words, what happens inside a `.mochi` file and why MOCHI
 behaves the way it does. You do not need it to use MOCHI, but it makes the messages
 and the choices easier to understand. The exact rules are in the specification
-(`docs/spec.md`); this page names the sections it summarizes.
+(`docs/spec.md`).
 
 ## The short version
 
@@ -21,7 +21,7 @@ and the choices easier to understand. The exact rules are in the specification
 * When something is damaged, `repair` builds a **new, repaired archive** and leaves the
   damaged one untouched.
 * A `.mochi` file is still one file on one disk: **it is not a backup** (see
-  [why an archive is not a backup](not-a-backup.md)).
+  [the user guide](README.md#a-mochi-file-is-not-a-backup)).
 
 ## An archive is a stack of versions
 
@@ -50,7 +50,6 @@ Because nothing is overwritten:
 * **The descriptor** at the very start of the file says which format and profile the
   archive uses (for example Encrypted). It is written once and never changes.
 
-(Spec §10 snapshots, §12 commits, §16 retention, §18 compaction and garbage collection.)
 
 ## How your files are stored
 
@@ -78,8 +77,6 @@ damaged, MOCHI can rebuild it from the manifests. Now and then a commit also sto
 complete copy of the catalog (a **checkpoint**), so opening an archive with a long
 history stays fast.
 
-(Spec §9 objects and integrity, §9.4 deduplication, §10 catalog, §11 recovery manifests,
-§13 compression and chunking.)
 
 ## How a new version is saved
 
@@ -108,7 +105,6 @@ If the operating system ever reports that a sync failed, MOCHI stops writing to 
 archive (the write fails with `WRITER_POISONED`) instead of trying again and pretending
 it worked.
 
-(Spec §5.1, §12.2, Annex B.2 D13 and D14.)
 
 ## Reading and extracting: checked every time
 
@@ -126,7 +122,6 @@ Archives are treated as untrusted. A name like `../../something` or a link is ne
 followed out of the folder you chose, and every size read from an archive is checked
 before memory is set aside for it.
 
-(Spec §5, §9.)
 
 ## Checking an archive
 
@@ -150,7 +145,6 @@ with (the head it saw last time, or one you give it).
 
 The details, and what each word promises, are in [What the checks prove](verification.md).
 
-(Spec §20.)
 
 ## When something is damaged
 
@@ -164,7 +158,7 @@ To bring things back, MOCHI tries the least invasive source first:
 1. Earlier sealed versions, when only the end of the file is damaged.
 2. The recovery manifests, to rebuild a damaged catalog.
 3. The **recovery record**, if the archive has one: extra parity data that can rebuild
-   damaged parts, up to a stated amount (see [Recovery record](recovery-record.md)).
+   damaged parts, up to a stated amount (see [Archive options](archive-options.md#recovery-record)).
 4. Other copies of the same archive that you give it (`--copy`), for any part that
    matches its fingerprint.
 5. A careful scan of the raw bytes (`--salvage`), only when you ask for it.
@@ -172,7 +166,6 @@ To bring things back, MOCHI tries the least invasive source first:
 Whatever comes back is checked against its fingerprint before it is used. A repair that
 could not bring everything back is labelled **partial** and lists what is missing.
 
-(Spec §22.)
 
 ## Choices made when an archive is created
 
@@ -180,9 +173,9 @@ Three kinds of archive are chosen at creation and are fixed for the archive's li
 
 | Choice | What it does | Read more |
 |---|---|---|
-| Encrypted (`--encrypted`) | Names, sizes, folders and content are sealed with XChaCha20-Poly1305 under a random key, which each passphrase unlocks. Lose every passphrase and the archive is lost: there is no back door | [Encrypted archives](encrypted.md) |
-| Recovery record (`--recovery-record PERCENT`) | Adds Reed–Solomon parity, about PERCENT % of each commit's size, that `verify` checks and `repair` can use | [Recovery record](recovery-record.md) |
-| TAR-compatible (`--tar-compatible`) | Every commit also carries a standard TAR stream, so `zstd` and `tar` can read the archive without MOCHI. Costs space and turns off storing chunks once | [TAR-compatible archives](tar-compatible.md) |
+| Encrypted (`--encrypted`) | Names, sizes, folders and content are sealed with XChaCha20-Poly1305 under a random key, which each passphrase unlocks. Lose every passphrase and the archive is lost: there is no back door | [Archive options](archive-options.md#encrypted) |
+| Recovery record (`--recovery-record PERCENT`) | Adds Reed–Solomon parity, about PERCENT % of each commit's size, that `verify` checks and `repair` can use | [Archive options](archive-options.md#recovery-record) |
+| TAR-compatible (`--tar-compatible`) | Every commit also carries a standard TAR stream, so `zstd` and `tar` can read the archive without MOCHI. Costs space and turns off storing chunks once | [Archive options](archive-options.md#tar-compatible) |
 
 An archive cannot be both Encrypted and TAR-compatible.
 

@@ -28,6 +28,19 @@
 //! it still opens an older commit that listed its envelope (removal is not
 //! revocation; B.2.10 item 10). That refusal is policy, not cryptography: the
 //! data key the older envelope yields is the head's too.
+//!
+//! # Choices this implementation made where R5 left one (accepted at the R5 freeze)
+//!
+//! 1. Low-level reads (`read_bound_manifest`, `check_image`) unlock from the
+//!    commit's own envelopes when the session has not opened the archive yet.
+//!    The head is opened strictly: the passphrase must open one of the head's
+//!    own envelopes, which is what makes a removed passphrase stop opening it.
+//! 2. Key-state replay covers every commit in `verify` and `fsck`; the opened
+//!    commit in appends, baseline recovery and `segment_state`; nothing in a
+//!    plain read open.
+//! 3. Keyless integrity above the `stored` level is `UNKNOWN`, not `PASS`.
+//! 4. The referential check accepts one sealed frame of the recorded length
+//!    for an AEAD object, one Zstandard data frame otherwise.
 
 use std::sync::{Arc, Mutex};
 

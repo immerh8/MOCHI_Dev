@@ -6,7 +6,7 @@ import pytest
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 GOLDEN = ROOT / "fixtures" / "golden"
 RATIFICATION = ROOT / "docs" / "ratification"
-GOLDEN_PASSPHRASE = "golden passphrase"      # found by trial; see READING-LOG.md (c11 archive)
+GOLDEN_PASSPHRASE = "golden passphrase"      # the c11 fixtures' passphrase, found by trial
 
 
 @pytest.fixture(scope="session")

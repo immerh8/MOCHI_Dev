@@ -1,5 +1,5 @@
 //! C6 restoration on Windows (owner delegation 2026-10-06; see
-//! `docs/dev/restore-platforms.md`). `OsRestoreDir` pins every directory it
+//! the module docs of `storage/os/restore_windows.rs`). `OsRestoreDir` pins every directory it
 //! holds (no `FILE_SHARE_DELETE`), so a directory in the restored tree
 //! cannot be renamed away and replaced while restoration resolves names
 //! through it, and it never opens through a reparse point.

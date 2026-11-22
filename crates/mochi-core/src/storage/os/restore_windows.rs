@@ -2,8 +2,26 @@
 //! directory handles**, with `std` only and no `unsafe` (`mochi-core`
 //! forbids it; the creation path's `unsafe` lives in `mochi-sys`, which
 //! restoration does not need). The Linux counterpart is
-//! `restore_linux.rs`. What this guarantees, what it concedes, and how a
-//! stronger implementation would replace it: `docs/dev/restore-platforms.md`.
+//! `restore_linux.rs`.
+//!
+//! # Known limits (accepted for 1.0)
+//!
+//! None of these allows an overwrite, a write through a link, or a write
+//! outside the tree, given that only the user (and administrators) can modify
+//! the destination and its ancestors. Each remedy needs handle-relative Win32
+//! calls, so audited `unsafe` in a separate crate.
+//!
+//! * **W1.** The root's ancestors are not pinned: someone able to rename a
+//!   directory above the destination could redirect later writes.
+//! * **W2.** The destination's ACL is not checked (Linux refuses a root other
+//!   users can modify); a user with write access there could swap a
+//!   temporary file before it is published. Directories are pinned.
+//! * **W3.** Temporary files are not pinned (unlinking needs `DELETE`).
+//! * **W4.** Hidden and system attributes are reported, not set.
+//! * **W5.** Directory durability is `Unconfirmed` (spec B.2.6, B.2.20).
+//! * **W6.** The case-behaviour probe can race with another process; only
+//!   the report could be wrong, since exclusive creation still refuses every
+//!   collision.
 //!
 //! # Mechanism
 //!

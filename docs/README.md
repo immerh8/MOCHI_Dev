@@ -1,11 +1,16 @@
 # MOCHI documentation
 
-| For | Read |
-|---|---|
-| Using MOCHI | [User guide](user/README.md) · [Command-line reference](cli.md) |
-| The file format | [Specification](spec.md) (normative) · [Ratification artifacts](ratification/README.md) (frozen) · [CDDL and JSON schemas](schemas/) · [Report format](report-schema-v1.md) |
-| Working on MOCHI | [Developer documents](dev/README.md) · [Contributing](../CONTRIBUTING.md) · [`AGENTS.md`](../AGENTS.md) |
-| What changed | [Release notes](release-notes/) |
+**Using MOCHI:** [user guide](user/README.md) · [how MOCHI works](user/how-it-works.md) ·
+[command-line reference](cli.md)
 
-The files in `ratification/` and the frozen schemas are part of the format: they are
-never edited, only superseded by new identifiers (spec Annex B).
+**The format:** [specification](spec.md) (normative) · [ratification artifacts](ratification/README.md)
+(frozen) · [CDDL and JSON schemas](schemas/) · [report format](report-schema-v1.md)
+
+**Working on MOCHI:** [design decisions](dev/decisions.md) ·
+[building and releasing](dev/building-and-releasing.md) · [performance](dev/performance.md) ·
+[contributing](../CONTRIBUTING.md) · [`AGENTS.md`](../AGENTS.md)
+
+**Changes:** [release notes](release-notes/)
+
+Files in `ratification/` and the frozen schemas are part of the format: they are never
+edited, only superseded by new identifiers (spec Annex B).

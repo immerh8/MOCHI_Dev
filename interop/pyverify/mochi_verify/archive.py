@@ -1,7 +1,7 @@
 """Whole-archive verification: head, chain, replay, objects, profiles.
 
 Everything here is derived from the specification and the ratification
-artifacts; see READING-LOG.md for the readings chosen where they were silent.
+artifacts.
 """
 from __future__ import annotations
 

@@ -21,7 +21,7 @@ credits you unless you prefer otherwise.
 - Integrity: MOCHI reporting content as verified when it is not, or accepting a forged
   history as valid without saying so.
 - The Encrypted profile: anything that reveals sealed names, sizes or content without the
-  passphrase beyond what [`docs/user/encrypted.md`](docs/user/encrypted.md) documents,
+  passphrase beyond what [`docs/user/archive-options.md#encrypted`](docs/user/archive-options.md#encrypted) documents,
   and any misuse of nonces or keys.
 - The desktop app: anything that lets archive content or a web page reach the file
   system, the shell or the network.

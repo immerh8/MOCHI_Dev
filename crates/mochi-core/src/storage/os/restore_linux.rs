@@ -1,7 +1,13 @@
 //! [`OsRestoreDir`] on Linux (plan C6): race-resistant restoration through
 //! directory descriptors (`rustix`, no `unsafe`). The Windows counterpart is
 //! `restore_windows.rs`; both implement [`RestoreDir`] and are chosen by
-//! target in `os.rs`. See `docs/dev/restore-platforms.md`.
+//! target in `os.rs`.
+//!
+//! Known limits: case-insensitive folders are detected with a probe file in
+//! the root, created and removed (CI's `casefold` job checks it on ext4);
+//! names that differ only in Unicode normalization are not foreseen by the
+//! preflight, though exclusive creation still refuses them; and a root that
+//! other users can modify is refused, not worked around.
 
 use std::ffi::OsStr;
 use std::os::fd::OwnedFd;

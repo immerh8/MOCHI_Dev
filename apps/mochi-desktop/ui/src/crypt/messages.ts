@@ -17,7 +17,7 @@ export const dedupLeak = () => t("crypt.dedupLeak");
 
 export const hiddenWithKey = () => t("crypt.hiddenWithKey");
 
-/** What stays visible to anyone holding the file (docs/dev/encrypted-profile.md). */
+/** What stays visible to anyone holding the file (docs/ratification/R5-crypto-draft.md). */
 export const visibleWithoutKey = () => [
   t("crypt.visible1"),
   t("crypt.visible2"),

@@ -1,112 +1,64 @@
 # MOCHI
 
-**MOCHI** is an archive format and an archiver: a `.mochi` file keeps every version
-of what you put in it, checks every byte it reads, and says plainly what it could
-and could not verify. It ships the way WinRAR does: a desktop application for
-Windows and Ubuntu, a `mochi` command-line tool, and the Rust library both are built on.
+An archive format and archiver. **MOCHI 1.0 ships on the same model as WinRAR: a reusable
+format library plus an end-user application**, here a desktop app for Windows and Ubuntu
+and the `mochi` command line.
 
-> **A `.mochi` file is not a backup.** It is one file on one disk. Keep independent
-> copies of anything you cannot recreate. See [why](docs/user/not-a-backup.md).
+A `.mochi` file keeps every version of what you put in it, checks every byte it reads,
+and says plainly what it could and could not verify.
 
-## What it does
+> **A `.mochi` file is not a backup.** It is one file on one disk. Keep independent copies
+> of anything you cannot recreate.
 
-- **Versions, not just files.** Each `create` or `append` is a commit. Every earlier
-  snapshot stays readable; deleting a file removes it from the current snapshot, not
-  from history. Unchanged content is stored once.
-- **Verified reads.** Every object is checked against its BLAKE3-256 hash before it is
-  used, and a file is only written out after its content hash matches. `verify`
-  reports each health dimension separately and never calls a check that did not run
-  a pass.
-- **All-or-nothing saving.** A commit becomes visible only after it is completely on disk;
-  an interrupted write never replaces the last good version.
-- **Optional profiles, chosen at creation:**
-  - *Encrypted* (XChaCha20-Poly1305, passphrase-only): names, sizes and content are sealed.
-  - *Recovery record*: Reed–Solomon parity that `repair` can use to rebuild damaged parts.
-  - *TAR-compatible*: standard `zstd` and `tar` can read the archive's history.
-- **Desktop app.** Browse, create, add, extract, test and repair `.mochi` archives;
-  open ZIP, 7z, RAR and `.tar`/`.tar.gz`/`.tar.zst` read-only; write ZIP and TAR
-  archives; search file names across every archive under a folder and retrieve the
-  matches. Explorer and file-manager integration on Windows and Ubuntu.
+## Features
 
-New to MOCHI? Read [How MOCHI works](docs/user/how-it-works.md).
+- **Versions.** Each save is a new version at the end of the file; older ones stay readable.
+- **Checked reads.** Everything is verified against BLAKE3 fingerprints before use.
+- **All-or-nothing saving.** An interrupted write never replaces the last good version.
+- **Options at creation:** encryption, a recovery record (Reed–Solomon parity), or a
+  TAR-compatible layout that `zstd` and `tar` can read.
+- **Desktop app:** browse, create, extract, test and repair; open ZIP, 7z, RAR and TAR
+  read-only; find and retrieve files across many archives.
 
-The format is **ratified at version 1.0** ([specification](docs/spec.md)).
-Archives written by pre-1.0 builds are converted with `mochi migrate`.
+The format is ratified at version 1.0 ([specification](docs/spec.md)).
 
 ## Download
 
-Installers are on the **Releases** page:
+Installers for Windows 10 22H2 / 11 and Ubuntu 22.04 / 24.04 (x86-64) are on the
+**Releases** page. They are not code-signed (Windows shows "unknown publisher"); updates
+are signed and checked by the app.
 
-| Platform | Package |
-|---|---|
-| Windows 10 22H2 / 11 (x86-64) | `MOCHI_<version>_x64-setup.exe` (per-user install) |
-| Ubuntu 22.04 / 24.04 (x86-64) | `mochi_<version>_amd64.deb` (`sudo apt install ./mochi_*.deb`) |
-
-The installers are not code-signed, so Windows SmartScreen shows "unknown publisher"
-(choose *More info*, then *Run anyway*). The in-app updater checks its own signature on
-every update before installing it. macOS is not supported.
-
-## The command line
+## Quick start
 
 ```bash
-mochi create photos.mochi ~/Pictures/2026        # a new archive (never replaces a file)
+mochi create photos.mochi ~/Pictures/2026
 mochi append photos.mochi new.jpg --delete 2026/old.jpg
-mochi list photos.mochi                          # the latest snapshot; --snapshot N for history
-mochi get photos.mochi -C restored/              # each file verified before it is written
-mochi verify photos.mochi                        # read-only health report (--json for machines)
-mochi find --name report.pdf --name '*.log' ~/Archives   # names across many archives
+mochi list photos.mochi
+mochi get photos.mochi -C restored/
+mochi verify photos.mochi
 ```
-
-Every command, option and exit code: [`docs/cli.md`](docs/cli.md).
 
 ## Documentation
 
-| | |
-|---|---|
-| [How MOCHI works](docs/user/how-it-works.md) | Start here: versions, chunks and fingerprints, how saving works, checks and repair, in plain words |
-| [User guide](docs/user/README.md) | Getting started, encryption, what the checks prove, recovery records, TAR compatibility |
-| [Command-line reference](docs/cli.md) | Commands, exit codes, JSON output |
-| [Specification](docs/spec.md) | The `.mochi` format (normative), with the frozen [ratification artifacts](docs/ratification/README.md) and [schemas](docs/schemas/) |
-| [Desktop app](apps/mochi-desktop/README.md) | Architecture, IPC, security rules, testing |
-| [Developer documents](docs/dev/README.md) | Design decisions, packaging and releases, benchmarks, platform notes |
-| [Release notes](docs/release-notes/) | What changed in each version |
+- [How MOCHI works](docs/user/how-it-works.md): start here
+- [User guide](docs/user/README.md) and [command-line reference](docs/cli.md)
+- [Specification](docs/spec.md), [ratification artifacts](docs/ratification/README.md), [schemas](docs/schemas/)
+- [Developer documents](docs/README.md) and the [desktop app](apps/mochi-desktop/README.md)
 
-## Building from source
-
-Rust 1.91 (pinned in `rust-toolchain.toml`; the minimum supported version is 1.89).
+## Building
 
 ```bash
-cargo build --release -p mochi-cli          # the `mochi` binary
+cargo build --release -p mochi-cli     # Rust 1.91, pinned in rust-toolchain.toml
 cargo test --workspace
 ```
 
-The desktop app also needs Node 22 or newer with pnpm, and on Linux the WebKitGTK 4.1
-development packages. See [`apps/mochi-desktop/README.md`](apps/mochi-desktop/README.md).
+The desktop app also needs Node 22+ with pnpm, and WebKitGTK 4.1 on Linux
+([details](apps/mochi-desktop/README.md)).
 
-## Repository layout
+## Contributing and security
 
-| Path | What it is |
-|---|---|
-| `crates/mochi-format` | Framing, record envelopes, digests. Pure: no I/O |
-| `crates/mochi-core` | Archive operations: catalog, commits, verification, restore, repair, jobs, reports |
-| `crates/mochi-cli` | The `mochi` command-line tool |
-| `crates/mochi-export` | Writes ZIP and TAR archives for the desktop app |
-| `crates/mochi-foreign` | Reads ZIP, 7z, RAR and TAR in an isolated helper process |
-| `crates/mochi-sys`, `crates/mochi-shellext` | Windows system calls and the Explorer context menu |
-| `crates/mochi-testkit` | Fault-injecting storage, golden fixtures, test tools |
-| `apps/mochi-desktop` | The desktop app (Tauri 2, React, TypeScript) |
-| `interop/pyverify` | An independent read-only verifier in Python, written from the specification alone |
-| `fixtures/`, `fuzz/` | Golden archives and vectors; fuzz targets |
-| `packaging/`, `ci/` | Installers, the bundled user guide, CI scripts |
-
-## Contributing
-
-Contributions are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) first: the format
-has invariants that tests alone cannot enforce. To report a security problem, see
-[`SECURITY.md`](SECURITY.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 ## License
 
-[MIT](LICENSE). Third-party components and their licenses are listed in
-[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md); the RAR reader uses the UnRAR source,
-which is freeware under its own license and is used for reading only.
+[MIT](LICENSE). Third-party notices: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

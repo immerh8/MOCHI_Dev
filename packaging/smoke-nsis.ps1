@@ -3,7 +3,7 @@
 # with the default (the foreign-format opt-in is OFF) and once with /ASSOCIATE_FOREIGN.
 # Usage: smoke-nsis.ps1 path\to\setup.exe
 # Note: Windows Server runner; client-only behaviour (WebView2 bootstrap on a machine
-# without it, Explorer's menu display and its locked-DLL behaviour on update) is on the release checklist (docs/dev/packaging.md).
+# without it, Explorer's menu display and its locked-DLL behaviour on update) is on the release checklist (docs/dev/building-and-releasing.md).
 param([Parameter(Mandatory = $true)][string]$Setup)
 $ErrorActionPreference = "Stop"
 function Fail($m) { Write-Error "SMOKE FAIL: $m"; exit 1 }
@@ -128,7 +128,7 @@ function Run-Cycle([string[]]$SetupArgs, [bool]$ExpectForeign, [string]$StartPat
   # "guide/index.html" under the install directory), with every page, offline and static.
   $guideIndex = Join-Path $dir "guide\index.html"
   if (-not (Test-Path $guideIndex)) { Fail "user guide missing at $guideIndex" }
-  foreach ($page in "index", "not-a-backup", "getting-started", "how-it-works", "encrypted", "verification", "tar-compatible", "recovery-record", "experimental") {
+  foreach ($page in "index", "getting-started", "how-it-works", "archive-options", "verification") {
     $f = Join-Path $dir "guide\$page.html"
     if (-not (Test-Path $f) -or (Get-Item $f).Length -eq 0) { Fail "user guide page $page.html missing or empty" }
   }

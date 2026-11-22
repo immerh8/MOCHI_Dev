@@ -19,14 +19,10 @@ SRC = pathlib.Path(__file__).resolve().parent.parent / "docs" / "user"
 # is not listed here makes the build fail, so a new page cannot be left out by accident.
 PAGES = [
     "README.md",
-    "not-a-backup.md",
     "getting-started.md",
     "how-it-works.md",
-    "encrypted.md",
+    "archive-options.md",
     "verification.md",
-    "tar-compatible.md",
-    "recovery-record.md",
-    "experimental.md",
 ]
 
 BANNER_TITLE = "This guide is written for the mochi command line."
