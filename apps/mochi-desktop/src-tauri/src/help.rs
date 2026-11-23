@@ -4,7 +4,7 @@
 //! (`packaging/guide.py`) and installed as a resource, `guide/index.html`. It is
 //! written for the `mochi` command line, and says so in a banner on every page.
 //!
-//! Least privilege (AGENTS.md "Tauri v2 rules"): the webview supplies **no path and no
+//! Least privilege (CONTRIBUTING.md "Desktop app (Tauri)"): the webview supplies **no path and no
 //! URL**. Rust resolves the bundled resource, checks that it is a file, and hands it to the
 //! operating system's handler for `.html`. The page it opens is local and offline (no
 //! script, no remote content), and the app's CSP is unchanged. The webview is granted one

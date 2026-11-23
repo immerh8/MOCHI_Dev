@@ -1,6 +1,6 @@
 //! The MOCHI desktop application (plan §7, phases D0 to D6).
 //!
-//! Commands are thin adapters (AGENTS.md "Tauri v2 rules"): they validate
+//! Commands are thin adapters (CONTRIBUTING.md "Desktop app (Tauri)"): they validate
 //! input, call into `mochi-core` or the job runner, and return typed
 //! results. No format logic lives here or in the UI. The IPC types are
 //! generated into `ui/src/ipc/generated/` by `ts-rs` when the tests run;

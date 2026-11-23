@@ -299,7 +299,7 @@ pub struct DedupStats {
 /// and *B* is the base's image plus snapshot manifest. α is held as a ratio
 /// so the decision is exact integer arithmetic, the same on every platform.
 /// The defaults are α = 1 and *F* = 1 MiB, confirmed by the gate G3
-/// measurements (T32, `docs/dev/performance.md#scaling`).
+/// measurements (T32).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CheckpointTrigger {
     alpha_num: u64,
@@ -2290,7 +2290,7 @@ pub enum AuditEvent {
 /// §12.4 commit status. **Only `LOCAL_COMMITTED` exists in 1.0.** The
 /// Preservation states (`REPLICATION_PENDING`, `PRESERVED`,
 /// `PRESERVATION_DEGRADED`) need the Preservation profile, which 1.0 does not
-/// ship, so they are deliberately not representable (AGENTS.md: nothing in
+/// ship, so they are deliberately not representable (CONTRIBUTING.md: nothing in
 /// 1.0 may report `PRESERVED`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum CommitStatus {

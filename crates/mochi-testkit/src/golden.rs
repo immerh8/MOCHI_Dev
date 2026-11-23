@@ -4,7 +4,7 @@
 //! `fixtures/golden/c1/`. A test compares the builders against the files, so a
 //! format-affecting change shows up as a specific, reviewable diff. Files are
 //! rewritten only by the explicit, ignored `write_c1_golden_files` test, one
-//! deliberate run at a time (AGENTS.md: never blanket regeneration).
+//! deliberate run at a time (CONTRIBUTING.md: never blanket regeneration).
 
 use mochi_format::footer::encode_footer_frame;
 use mochi_format::registry;

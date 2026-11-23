@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-/// The only permitted status values (spec §20.4). AGENTS.md: use no others.
+/// The only permitted status values (spec §20.4). CONTRIBUTING.md: use no others.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Status {

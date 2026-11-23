@@ -2,7 +2,7 @@ import type { Catalogue } from "../types";
 import type { crypt as enCrypt } from "../en/crypt";
 // Passphrases, encryption, the recovery record, rekeying, search coverage.
 // Nothing here may say an archive is "safe", "secure", "backed up", or
-// "preserved", or that a passphrase was "revoked" (spec §23.3; AGENTS.md).
+// "preserved", or that a passphrase was "revoked" (spec §23.3; CONTRIBUTING.md).
 export const crypt = {
   "crypt.lostPassphrase":
     "หากคุณทำวลีรหัสผ่านของไฟล์บีบอัดนี้หายทั้งหมด จะเปิดเนื้อหาไม่ได้อีก และไม่มีทางกู้คืน: ไม่มีสิ่งใดในไฟล์ ใน MOCHI หรือในการซ่อมที่ให้วลีรหัสผ่านได้ ควรเก็บวลีรหัสผ่านไว้แยกจากไฟล์บีบอัดและสำเนาทั้งหมด",

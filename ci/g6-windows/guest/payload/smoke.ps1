@@ -1,4 +1,4 @@
-# Installer smoke test, SYSTEM half (docs/dev/building-and-releasing.md#releasing "Automated").
+# Installer smoke test, SYSTEM half.
 #
 # The harness agent runs this at every boot, as SYSTEM, from the payload disc.
 # Per-user installs, Explorer verbs and a visible window need an interactive

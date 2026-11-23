@@ -1,6 +1,6 @@
 //! Writing from the desktop app (plan D2): staging what to add, and the jobs
 //! that create an archive, add to one, and remove entries from its current
-//! snapshot. Thin over `mochi-core` (AGENTS.md): the walk, names, and
+//! snapshot. Thin over `mochi-core` (CONTRIBUTING.md): the walk, names, and
 //! attributes are `mochi_core::import`, the commit is `ArchiveWriter`; this
 //! module keeps the user's selection and converts results. Independent of
 //! Tauri (the window and the dialogs are wired in `lib.rs` and `commands.rs`),

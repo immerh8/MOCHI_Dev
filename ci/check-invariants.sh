@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mechanical checks for AGENTS.md rules that clippy cannot express.
+# Mechanical checks for CONTRIBUTING.md rules that clippy cannot express.
 # Runs on Linux and Windows (Git Bash), the supported platforms (plan O11).
 # Exits non-zero on any violation.
 set -u
@@ -14,18 +14,18 @@ report() { echo "invariant violated: $1"; echo "$2" | sed 's/^/    /'; fail=1; }
 #    ignored.)
 hits=$(grep -rnE --include='*.rs' '^[^/]*\bstd::fs\b' crates/mochi-core/src \
         | grep -vE '^crates/mochi-core/src/storage/os(\.rs|/[a-z_]+\.rs):' || true)
-[ -n "$hits" ] && report "std::fs used in mochi-core outside storage/os.rs and storage/os/ (AGENTS.md: Publication and safety)" "$hits"
+[ -n "$hits" ] && report "std::fs used in mochi-core outside storage/os.rs and storage/os/ (CONTRIBUTING.md: Publication and safety)" "$hits"
 
 # 2. Frame magic literals live only in mochi-format's registry module.
 hits=$(grep -rniE --include='*.rs' '0x184D_?2A[0-9A-F]{2}|0xFD2F_?B528' crates apps 2>/dev/null \
         | grep -v '^crates/mochi-format/src/registry.rs:' || true)
-[ -n "$hits" ] && report "frame magic literal outside mochi-format/src/registry.rs (AGENTS.md: Wire format)" "$hits"
+[ -n "$hits" ] && report "frame magic literal outside mochi-format/src/registry.rs (CONTRIBUTING.md: Wire format)" "$hits"
 #    Same for the 8-byte magics: the footer payload magic `MOCHI2\0\0` and the
 #    tail-quarantine sidecar magic `MOCHITQ\0` (spec Annex B.2.2). Domain
 #    separators such as "MOCHI2-FOOTER" are not magics and do not match.
 hits=$(grep -rnE --include='*.rs' 'b"MOCHI(2|TQ)\\0' crates apps fuzz 2>/dev/null \
         | grep -v '^crates/mochi-format/src/registry.rs:' || true)
-[ -n "$hits" ] && report "8-byte MOCHI magic literal outside mochi-format/src/registry.rs (AGENTS.md: Wire format)" "$hits"
+[ -n "$hits" ] && report "8-byte MOCHI magic literal outside mochi-format/src/registry.rs (CONTRIBUTING.md: Wire format)" "$hits"
 
 # 3. unsafe is forbidden in the two format-critical library crates (mochi-sys,
 #    rule 11 (f2), is where mochi-core's Win32 calls live).
@@ -51,7 +51,7 @@ hits=$(grep -rnE --include='*.rs' '\b(println|eprintln|print|eprint)!' crates/mo
 #    says, and it parses hostile input in C++. No other crate may depend on it.
 hits=$(grep -nE '^\s*unrar(_sys|-sys)?\s*=' $(find crates apps -name Cargo.toml 2>/dev/null) 2>/dev/null \
         | grep -v '^crates/mochi-foreign/' || true)
-[ -n "$hits" ] && report "unrar dependency outside crates/mochi-foreign (AGENTS.md: Foreign archive formats)" "$hits"
+[ -n "$hits" ] && report "unrar dependency outside crates/mochi-foreign (CONTRIBUTING.md: Foreign archive formats)" "$hits"
 
 # 7. Archive-supplied strings render as text only (spec §23.3 #9). React's
 #    escape hatch is banned outright in the UI source.
@@ -60,7 +60,7 @@ if [ -d apps/mochi-desktop/ui/src ]; then
   hits=$(grep -rnE 'dangerouslySetInnerHTML|\.innerHTML\s*=' apps/mochi-desktop/ui/src \
           --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' \
           --exclude-dir=node_modules --exclude-dir=dist 2>/dev/null || true)
-  [ -n "$hits" ] && report "HTML injection API in the UI (AGENTS.md: Tauri v2 rules)" "$hits"
+  [ -n "$hits" ] && report "HTML injection API in the UI (CONTRIBUTING.md: Tauri v2 rules)" "$hits"
 fi
 
 # 8. The catalog never touches the filesystem (catalog/mod.rs, plan O25):
@@ -85,7 +85,7 @@ for f in crates/mochi-cli/Cargo.toml crates/mochi-core/Cargo.toml crates/mochi-f
   [ -n "$deps" ] && report "shipped crate depends on mochi-testkit (review decision 14)" "$f: $deps"
 done
 
-# 10. Least privilege for the webview (AGENTS.md "Tauri v2 rules"): no
+# 10. Least privilege for the webview (CONTRIBUTING.md "Desktop app (Tauri)"): no
 #     filesystem, shell, process, or HTTP permission in any capability, and a
 #     CSP with no eval and no remote origin (only the app and its IPC). No
 #     dialog permission either: the open dialog runs in Rust (D1,
@@ -93,21 +93,21 @@ done
 caps=apps/mochi-desktop/src-tauri/capabilities
 if [ -d "$caps" ]; then
   hits=$(grep -rnE '"(fs|shell|http|process|opener|updater|dialog):' "$caps" 2>/dev/null || true)
-  [ -n "$hits" ] && report "broad webview permission in a capability (AGENTS.md: least privilege)" "$hits"
+  [ -n "$hits" ] && report "broad webview permission in a capability (CONTRIBUTING.md: least privilege)" "$hits"
 fi
 conf=apps/mochi-desktop/src-tauri/tauri.conf.json
 if [ -f "$conf" ]; then
   csp=$(grep -nE '"(csp|devCsp)"' "$conf" || true)
   hits=$(printf '%s\n' "$csp" | grep -E "unsafe-eval|wasm-unsafe-eval" || true)
-  [ -n "$hits" ] && report "CSP allows eval (AGENTS.md: strict CSP)" "$hits"
+  [ -n "$hits" ] && report "CSP allows eval (CONTRIBUTING.md: strict CSP)" "$hits"
   # The only http(s) origin allowed is Tauri's IPC endpoint on Windows; the
   # Vite dev server appears only as ws://localhost in devCsp.
   hits=$(printf '%s\n' "$csp" | grep -oE 'https?://[^ ;"]+' | grep -vxE 'http://ipc\.localhost' || true)
-  [ -n "$hits" ] && report "CSP allows a remote origin (AGENTS.md: strict CSP)" "$hits"
-  grep -qE '"csp"[[:space:]]*:[[:space:]]*"' "$conf" || report "no CSP in tauri.conf.json (AGENTS.md: strict CSP)" "$conf"
+  [ -n "$hits" ] && report "CSP allows a remote origin (CONTRIBUTING.md: strict CSP)" "$hits"
+  grep -qE '"csp"[[:space:]]*:[[:space:]]*"' "$conf" || report "no CSP in tauri.conf.json (CONTRIBUTING.md: strict CSP)" "$conf"
 fi
 
-# 11. Foreign archive formats (plan D8, AGENTS.md "Foreign archive formats").
+# 11. Foreign archive formats (plan D8, CONTRIBUTING.md "Foreign archive formats").
 #     (a) The format library, the core, and the test kit never depend on the
 #     foreign-format crate, and no source in them names it.
 hits=$(grep -nE 'mochi-foreign|mochi_foreign' crates/mochi-format/Cargo.toml crates/mochi-core/Cargo.toml crates/mochi-testkit/Cargo.toml || true)
@@ -153,7 +153,7 @@ hits=$(grep -rnE --include='*.rs' '\.extract\(|extract_unwrapped|unpack\(|unpack
 
 #     (f) `unsafe` in the foreign crate lives only in the two modules that need
 #     it (the UnRAR FFI and the Windows Job Object), each block with a SAFETY
-#     comment on a line above it (AGENTS.md: any exception needs a justification).
+#     comment on a line above it (CONTRIBUTING.md: any exception needs a justification).
 hits=$(grep -rnE --include='*.rs' '\bunsafe\b' crates/mochi-foreign/src \
         | grep -vE '^crates/mochi-foreign/src/(rarfmt|jobobject)\.rs:' \
         | grep -vE '^[^:]+:[0-9]+:\s*(//|\*)' || true)
@@ -182,7 +182,7 @@ hits=$(awk '
 hits=$(grep -rnE --include='*.rs' '\bunsafe\b' crates/*/src apps/mochi-desktop/src-tauri/src 2>/dev/null \
         | grep -vE '^crates/mochi-foreign/src/(rarfmt|jobobject)\.rs:|^crates/mochi-sys/src/lib\.rs:|^crates/mochi-shellext/src/shell\.rs:' \
         | grep -vE '^[^:]+:[0-9]+:\s*(//|\*)' || true)
-[ -n "$hits" ] && report "unsafe outside mochi-foreign's rarfmt.rs / jobobject.rs, mochi-sys/src/lib.rs and mochi-shellext/src/shell.rs (AGENTS.md)" "$hits"
+[ -n "$hits" ] && report "unsafe outside mochi-foreign's rarfmt.rs / jobobject.rs, mochi-sys/src/lib.rs and mochi-shellext/src/shell.rs (CONTRIBUTING.md)" "$hits"
 grep -q 'deny(unsafe_op_in_unsafe_fn)' crates/mochi-sys/src/lib.rs \
   || report "mochi-sys must keep #![deny(unsafe_op_in_unsafe_fn)]" "crates/mochi-sys/src/lib.rs"
 grep -q 'deny(unsafe_op_in_unsafe_fn)' crates/mochi-shellext/src/lib.rs \
@@ -223,7 +223,7 @@ hits=$(grep -rnE --include='*.rs' 'write_all\([^)]*Rar!|b"Rar!' crates/mochi-for
 
 # 11. In-app updates (plan D7, T13). The webview gets none of the updater plugin's own
 #     permissions and does not import its JavaScript API: Rust makes the request and
-#     checks the signature (docs/dev/building-and-releasing.md "Updates"). No private key material is
+#     checks the signature. No private key material is
 #     committed. The release workflow only ever creates DRAFT releases and never pushes
 #     a tag or publishes.
 hits=$(grep -nE '"(updater:|core:)' apps/mochi-desktop/src-tauri/capabilities/*.json || true)

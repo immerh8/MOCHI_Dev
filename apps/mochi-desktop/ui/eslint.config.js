@@ -1,4 +1,4 @@
-// ESLint flat config. AGENTS.md "Tauri v2 rules": archive-supplied strings
+// ESLint flat config. CONTRIBUTING.md "Desktop app (Tauri)": archive-supplied strings
 // render as text only. `eslint-plugin-react`'s `react/no-danger` stops at
 // ESLint 9 (out of support), so the maintained `@eslint-react` rules carry
 // it, with a core-ESLint backstop that bans the attribute by name, and
@@ -16,15 +16,15 @@ import tseslint from "typescript-eslint";
 const HTML_BANS = [
   {
     selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
-    message: "Render archive strings as text only (AGENTS.md, spec §23.3 #9).",
+    message: "Render archive strings as text only (CONTRIBUTING.md, spec §23.3 #9).",
   },
   {
     selector: "AssignmentExpression[left.property.name=/^(innerHTML|outerHTML)$/]",
-    message: "Never build HTML from strings (AGENTS.md).",
+    message: "Never build HTML from strings (CONTRIBUTING.md).",
   },
   {
     selector: "CallExpression[callee.property.name='insertAdjacentHTML']",
-    message: "Never build HTML from strings (AGENTS.md).",
+    message: "Never build HTML from strings (CONTRIBUTING.md).",
   },
 ];
 

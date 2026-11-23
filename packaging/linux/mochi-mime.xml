@@ -3,7 +3,7 @@
      /usr/share/mime/packages/mochi.xml; the package's dpkg triggers run
      update-mime-database. Recognised by name only: the format's magic bytes are
      defined in docs/spec.md and the ratification artifacts, and are deliberately
-     not repeated here (AGENTS.md: no magic literals outside mochi-format). -->
+     not repeated here (CONTRIBUTING.md: no magic literals outside mochi-format). -->
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
   <mime-type type="application/x-mochi">
     <comment>MOCHI archive</comment>

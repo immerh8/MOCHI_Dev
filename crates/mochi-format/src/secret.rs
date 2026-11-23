@@ -5,7 +5,7 @@
 //! that zeroizes on drop and offers **no** way to read its bytes back out of
 //! the crate: no `Clone`, no `AsRef<[u8]>`, no serialization, and a `Debug`
 //! that prints a fixed placeholder. A secret is therefore never logged,
-//! printed, or put in an error message by accident (AGENTS.md: secrets use
+//! printed, or put in an error message by accident (CONTRIBUTING.md: secrets use
 //! `zeroize`). The only readers are this crate's own AEAD and KDF code and
 //! [`Secret::matches`], which compares against expected bytes without
 //! returning them (test vectors use it).

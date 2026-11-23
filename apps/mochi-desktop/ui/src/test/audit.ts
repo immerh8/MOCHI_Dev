@@ -1,6 +1,6 @@
 // An in-house accessibility audit for rendered components (plan D7).
 //
-// The usual tool for this, axe-core, is MPL-2.0; AGENTS.md and the plan (O23)
+// The usual tool for this, axe-core, is MPL-2.0; CONTRIBUTING.md
 // ask for MIT/Apache-2.0-compatible dependencies, so this is a small set of
 // structural checks over the DOM instead, built on `dom-accessibility-api`
 // (MIT, the accessible-name algorithm Testing Library itself uses). It checks

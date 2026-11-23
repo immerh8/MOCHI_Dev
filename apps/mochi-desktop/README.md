@@ -41,8 +41,7 @@ cargo test -p mochi-desktop      # Rust tests; also regenerates ui/src/ipc/gener
 ```
 
 End-to-end tests need a release frontend build and `tauri-driver`; the `desktop e2e` CI
-job in `.github/workflows/ci.yml` shows the exact steps. Installers:
-[`docs/dev/building-and-releasing.md`](../../docs/dev/building-and-releasing.md).
+job in `.github/workflows/ci.yml` shows the exact steps; installers are built with `packaging/build-installer.sh`.
 
 ## Security model
 
@@ -63,4 +62,4 @@ job in `.github/workflows/ci.yml` shows the exact steps. Installers:
   crash logs stay local.
 
 Every new permission needs a reason in the pull request. The full rules are in
-[`AGENTS.md`](../../AGENTS.md).
+[CONTRIBUTING.md](../../CONTRIBUTING.md).

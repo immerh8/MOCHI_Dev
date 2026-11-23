@@ -3,7 +3,7 @@
 //! Dependency direction is one-way: `mochi-format` ← `mochi-core` ←
 //! {`mochi-cli`, desktop backend}. Nothing here knows about Tauri.
 //!
-//! Rules enforced for this crate (AGENTS.md):
+//! Rules enforced for this crate (CONTRIBUTING.md):
 //! * all I/O goes through [`storage::Storage`]; the single OS-backed
 //!   implementation lives in `storage/os.rs`, the only file allowed to touch
 //!   `std::fs` (checked by `ci/check-invariants.sh`);

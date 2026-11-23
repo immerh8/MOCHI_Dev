@@ -1,6 +1,6 @@
 //! The job runner: bridges `mochi_core::job` (a progress sink and a
 //! cancellation token) to an event stream, which the app sends over a Tauri
-//! `Channel` (AGENTS.md: no second progress mechanism).
+//! `Channel` (CONTRIBUTING.md: no second progress mechanism).
 //!
 //! It is independent of Tauri so that it is tested without a window: events
 //! go to an [`EventSink`], and work starts through a spawner the caller

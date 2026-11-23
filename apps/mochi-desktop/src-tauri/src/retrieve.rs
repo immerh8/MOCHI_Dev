@@ -2,7 +2,7 @@
 //! 2026-11-17): extract the chosen hits of the window's latest scan, from as
 //! many archives as they came from, into one folder the user chose.
 //!
-//! Thin over the extract path (AGENTS.md "No format logic in the UI or in
+//! Thin over the extract path (CONTRIBUTING.md "No format logic in the UI or in
 //! Tauri commands"):
 //!
 //! * **The webview names no path.** It names the scan number, each archive's

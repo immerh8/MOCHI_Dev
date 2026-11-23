@@ -4,7 +4,7 @@
 //! rewrap commit, and the re-encryption are core's; this module routes the
 //! request, keeps the open archive's key session, and converts the result.
 //!
-//! # Rules (AGENTS.md "Encrypted profile")
+//! # Rules (CONTRIBUTING.md "Encrypted profile")
 //!
 //! * A new passphrase crosses IPC once, in the job request, and goes straight
 //!   into a zeroizing type. It is in no result, no error, and no `Debug`.

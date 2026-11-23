@@ -1,6 +1,6 @@
 //! Extracting from the desktop app (plan D3): the folder the user chose, the
 //! plan that shows what would collide before anything is written, and the job
-//! that restores. Thin over `mochi-core` (AGENTS.md "No format logic in the UI
+//! that restores. Thin over `mochi-core` (CONTRIBUTING.md "No format logic in the UI
 //! or in Tauri commands"): every byte that reaches the disk is written by the
 //! C6 restore engine (`mochi_core::restore`), which rejects unsupported
 //! names, never follows a link, never overwrites, and publishes a file only

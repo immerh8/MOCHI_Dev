@@ -10,7 +10,7 @@
 //!
 //! The test never spells a frame magic or an 8-byte MOCHI magic: those are
 //! read from the documents and compared with `mochi_format::registry`
-//! (AGENTS.md, `ci/check-invariants.sh` rule 2).
+//! (CONTRIBUTING.md, `ci/check-invariants.sh` rule 2).
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -276,7 +276,7 @@ fn r1_registered_byte_strings_match_the_code() {
 }
 
 /// What Annex B added to the wire format after ratification, never by editing
-/// `docs/ratification/` (AGENTS.md: a change is a new identifier with an Annex B
+/// `docs/ratification/` (CONTRIBUTING.md: a change is a new identifier with an Annex B
 /// entry). The R1 and R3 checks below compare the frozen documents with the
 /// code *minus* exactly these additions, so an addition that has no entry here
 /// still fails them.

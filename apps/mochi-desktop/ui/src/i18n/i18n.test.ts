@@ -23,7 +23,7 @@ import { en } from "./en";
 
 /**
  * Words the app never uses about an archive, a repair, or a passphrase
- * (§23.3 #4, #6; AGENTS.md "Encrypted profile"). Applies to every template in
+ * (§23.3 #4, #6; CONTRIBUTING.md "Encrypted profile"). Applies to every template in
  * every catalogue, so a new screen cannot add one by the back door.
  *
  * Translators must follow the same §23.3 wording rules in their language:

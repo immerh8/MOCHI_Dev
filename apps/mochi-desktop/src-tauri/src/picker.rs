@@ -1,6 +1,6 @@
 //! Choosing an archive to open (plan D1). The native dialog runs in Rust, so
 //! the webview never names a path and needs no dialog or filesystem
-//! permission (least privilege, AGENTS.md "Tauri v2 rules"): the only file the
+//! permission (least privilege, CONTRIBUTING.md "Desktop app (Tauri)"): the only file the
 //! app reads is one the user picked in the operating system's own dialog.
 
 use std::path::PathBuf;

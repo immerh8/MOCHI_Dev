@@ -1,6 +1,6 @@
 //! Foreign archives in the desktop app (plan D8): ZIP, 7z, RAR, tar, tar.gz,
 //! tar.zst, opened **read-only** to browse, test, and extract. Thin over two crates
-//! (AGENTS.md "No format logic in the UI or in Tauri commands"):
+//! (CONTRIBUTING.md "No format logic in the UI or in Tauri commands"):
 //!
 //! * `mochi-foreign` parses the archive in an isolated helper process. This
 //!   crate links no parser (it names `mochi-foreign` with

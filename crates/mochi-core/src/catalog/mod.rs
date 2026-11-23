@@ -7,7 +7,7 @@
 //! `sqlite3_deserialize`, so an image is only ever a byte string that moves
 //! through the [`crate::storage::Storage`] trait like every other object.
 //! SQLite never opens a file (`temp_store = MEMORY`, no `ATTACH`, no file
-//! URIs), which keeps fault injection complete (AGENTS.md) and means a
+//! URIs), which keeps fault injection complete (CONTRIBUTING.md) and means a
 //! published image cannot depend on a WAL or journal (§10.5): there is no file
 //! for one to sit beside. The header check on open additionally rejects any
 //! image whose header says WAL.

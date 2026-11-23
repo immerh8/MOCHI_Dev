@@ -1,5 +1,5 @@
 //! Test, health, and repair from the desktop app (plan D4). Thin over
-//! `mochi-core` (AGENTS.md "No format logic in the UI or in Tauri commands"):
+//! `mochi-core` (CONTRIBUTING.md "No format logic in the UI or in Tauri commands"):
 //! verification is `mochi_core::verify::verify`, the health summary is
 //! `mochi_core::health::assess`, and repair is `mochi_core::repair::plan_*`
 //! then `apply_*`, called as `mochi verify`/`fsck`, `mochi health`, and

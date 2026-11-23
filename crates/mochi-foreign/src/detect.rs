@@ -1,6 +1,6 @@
 //! Format detection by content, never by extension. Runs inside the helper.
 //!
-//! A magic-number match is a candidate, not proof (AGENTS.md): ZIP needs a
+//! A magic-number match is a candidate, not proof (CONTRIBUTING.md): ZIP needs a
 //! consistent end-of-central-directory record, tar needs a valid header
 //! checksum, `.tar.gz` and `.tar.zst` need a gzip or Zstandard stream whose first
 //! block is a tar header.

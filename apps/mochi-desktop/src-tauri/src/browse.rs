@@ -1,12 +1,12 @@
 //! Archive browsing (plan D1): opened archives, their snapshots, and paged
-//! listings, as IPC types. Thin over `mochi-core` (AGENTS.md): opening,
+//! listings, as IPC types. Thin over `mochi-core` (CONTRIBUTING.md): opening,
 //! verification, history, retention, and the paged index
 //! ([`mochi_core::browse::SnapshotIndex`]) all live there; this module keeps
 //! sessions and converts results. It is independent of Tauri, so it is tested
 //! without a window.
 //!
 //! Reading only: archives are opened through `OsReadStorage` (spec §20.2,
-//! AGENTS.md "Verification is read-only"), and nothing here writes.
+//! CONTRIBUTING.md "Verification is read-only"), and nothing here writes.
 
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::path::{Path, PathBuf};

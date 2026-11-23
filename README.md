@@ -43,7 +43,7 @@ mochi verify photos.mochi
 - [How MOCHI works](docs/user/how-it-works.md): start here
 - [User guide](docs/user/README.md) and [command-line reference](docs/cli.md)
 - [Specification](docs/spec.md), [ratification artifacts](docs/ratification/README.md), [schemas](docs/schemas/)
-- [Developer documents](docs/README.md) and the [desktop app](apps/mochi-desktop/README.md)
+- [Desktop app](apps/mochi-desktop/README.md) and [contributing](CONTRIBUTING.md)
 
 ## Building
 

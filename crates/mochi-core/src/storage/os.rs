@@ -47,7 +47,7 @@
 //!   returns.") concerns the copy-and-delete case, which a rename within one
 //!   directory is not.
 //!
-//!   **What the evidence shows (G6b, `docs/dev/building-and-releasing.md#windows-durability`, #60).**
+//!   **What the evidence shows (G6b, #60).**
 //!   On NTFS (Windows 11 build 26300.9457, Windows 10 22H2 build 19045.2006,
 //!   emulated disk that honours FLUSH/FUA), the first sentence alone is *not*
 //!   enough for a same-directory rename: a `MOVEFILE_WRITE_THROUGH` rename on

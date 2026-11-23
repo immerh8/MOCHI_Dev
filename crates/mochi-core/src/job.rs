@@ -3,7 +3,7 @@
 //! Long operations take a [`JobContext`] (a progress sink plus a cancellation
 //! token) and return a typed report. The CLI renders reports as text or JSON;
 //! the desktop app streams the same progress over a Tauri `Channel`. There is
-//! deliberately no second progress mechanism (AGENTS.md).
+//! deliberately no second progress mechanism (CONTRIBUTING.md).
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};

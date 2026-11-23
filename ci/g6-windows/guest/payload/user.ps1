@@ -1,4 +1,4 @@
-# Installer smoke test, interactive half (docs/dev/building-and-releasing.md#releasing "Automated").
+# Installer smoke test, interactive half.
 # Runs in the logged-on session of the image's throwaway account g6, started by
 # the scheduled task smoke.ps1 registered. Two install/uninstall cycles:
 #

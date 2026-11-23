@@ -1,5 +1,5 @@
 // What the app says about passphrases, encryption, the recovery record, and
-// search coverage (spec §23.3; AGENTS.md "Encrypted profile" and "Redundancy
+// search coverage (spec §23.3; CONTRIBUTING.md "Encrypted profile" and "Redundancy
 // profile"). Nothing here may say an archive is "safe", "secure", "backed
 // up", or "preserved", or that a passphrase was "revoked": removing one is
 // not revocation, and a recovery record is a repair aid, not a second copy.

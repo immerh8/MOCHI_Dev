@@ -3,7 +3,7 @@
 //! attributes, in one place for every client (spec §23.3 #1, §23.4).
 //!
 //! The source is reached through [`SourceTree`], so this module does no
-//! I/O itself (AGENTS.md: all I/O in `mochi-core` through traits); the OS
+//! I/O itself (CONTRIBUTING.md: all I/O in `mochi-core` through traits); the OS
 //! implementation is `storage::os::OsSourceTree`.
 //!
 //! # Rules (delegated decisions, recorded in plan C14)

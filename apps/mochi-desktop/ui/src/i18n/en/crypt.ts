@@ -1,6 +1,6 @@
 // Passphrases, encryption, the recovery record, rekeying, search coverage.
 // Nothing here may say an archive is "safe", "secure", "backed up", or
-// "preserved", or that a passphrase was "revoked" (spec §23.3; AGENTS.md).
+// "preserved", or that a passphrase was "revoked" (spec §23.3; CONTRIBUTING.md).
 export const crypt = {
   "crypt.lostPassphrase":
     "If you lose every passphrase for this archive, its contents are lost. There is no recovery: nothing in the file, in MOCHI, or in a repair can supply a passphrase. Keep the passphrase somewhere independent of the archive and of its copies.",

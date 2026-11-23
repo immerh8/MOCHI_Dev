@@ -1,6 +1,6 @@
 //! Digest scopes (spec §9.2) and the footer digest (§8.4).
 //!
-//! **Domain separators are defined once, here** (AGENTS.md). Every separator
+//! **Domain separators are defined once, here** (CONTRIBUTING.md). Every separator
 //! is `MOCHI2-<SCOPE>` followed by one zero byte, matching the footer's
 //! spec-given construction (§8.4). None contains an interior zero byte, so the
 //! separated scopes are prefix-free with respect to each other. Final strings

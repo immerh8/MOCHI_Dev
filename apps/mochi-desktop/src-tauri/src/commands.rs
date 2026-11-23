@@ -1,5 +1,5 @@
 //! Tauri commands: thin adapters over the job runner and `mochi-core`
-//! (AGENTS.md). Archive work runs on the blocking pool, never on the async
+//! (CONTRIBUTING.md). Archive work runs on the blocking pool, never on the async
 //! runtime.
 
 use std::sync::Arc;

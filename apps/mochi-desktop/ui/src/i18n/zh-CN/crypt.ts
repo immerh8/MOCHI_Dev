@@ -2,7 +2,7 @@ import type { Catalogue } from "../types";
 import type { crypt as enCrypt } from "../en/crypt";
 // Passphrases, encryption, the recovery record, rekeying, search coverage.
 // Nothing here may say an archive is "safe", "secure", "backed up", or
-// "preserved", or that a passphrase was "revoked" (spec §23.3; AGENTS.md).
+// "preserved", or that a passphrase was "revoked" (spec §23.3; CONTRIBUTING.md).
 export const crypt = {
   "crypt.lostPassphrase":
     "如果您丢失了此压缩文件的所有口令，其中的内容就无法再找回。没有任何恢复办法：文件本身、MOCHI 或修复功能都无法提供口令。请把口令保存在与压缩文件及其副本无关的地方。",

@@ -2,7 +2,7 @@
 //!
 //! **This is the only place error codes are defined.** Reports, CLI output, and
 //! UI messages all reuse [`ErrorCode`]. Adding a code is fine; renaming one or
-//! changing its meaning is a breaking change (AGENTS.md). Final names are
+//! changing its meaning is a breaking change (CONTRIBUTING.md). Final names are
 //! ratification item R7; until then every code here is *draft*.
 
 use std::fmt;
@@ -309,7 +309,7 @@ impl fmt::Display for ErrorCode {
 
 /// Error type for `mochi-core`: a stable code plus a human message.
 ///
-/// Messages must never contain secrets (AGENTS.md).
+/// Messages must never contain secrets (CONTRIBUTING.md).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MochiError {
     pub code: ErrorCode,

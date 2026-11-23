@@ -1,6 +1,6 @@
 //! Tauri build script. The app's own commands are declared here, so each
 //! one needs an explicit `allow-…` permission in `capabilities/` before the
-//! webview may call it (least privilege, AGENTS.md "Tauri v2 rules").
+//! webview may call it (least privilege, CONTRIBUTING.md "Desktop app (Tauri)").
 //!
 //! Visual C++ runtime (Windows): static in release builds, so the shipped
 //! app needs no VC++ redistributable, and dynamic otherwise. Tauri's static
