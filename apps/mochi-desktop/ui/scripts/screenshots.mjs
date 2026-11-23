@@ -55,7 +55,7 @@ const stub = () => {
         case "staged_sources": return { items: [], destination: null, default_destination: null };
         case "get_crash_settings": return { enabled: false, include_details: false, entries: 0, bytes: 0 };
         case "recent_archives": return [{ index: 0, name: "holiday-2026.mochi", folder: "/home/me/Archives" }, { index: 1, name: "taxes.mochi", folder: "/home/me/Documents" }];
-        case "get_update_settings": return { check_on_start: false, current_version: "0.1.0", install_mode: "manual", download_page: "https://github.com/immerh8/MOCHI/releases/latest", needs_admin_prompt: false };
+        case "get_update_settings": return { check_on_start: false, current_version: "0.1.0", install_mode: "manual", download_page: "https://github.com/Sepiolina/MOCHI/releases/latest", needs_admin_prompt: false };
         case "open_archive": return { status: "opened", archive: mochi };
         case "open_snapshot": return { seq: args.seq, commit_id: "c".repeat(64), entries: 437, root_dirs: 3, root_files: 61, catalog_source: { source: "image" } };
         case "list_children": {

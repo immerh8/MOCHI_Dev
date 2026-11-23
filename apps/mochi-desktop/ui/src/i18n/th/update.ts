@@ -7,7 +7,7 @@ import type { update as enUpdate } from "../en/update";
 export const update = {
   "update.heading": "การอัปเดต",
   "update.intro":
-    "MOCHI จะไม่ตรวจหาการอัปเดต ไม่ดาวน์โหลด และไม่ติดตั้ง จนกว่าคุณจะสั่ง การตรวจเป็นคำขอเดียวไปยัง GitHub (github.com/immerh8/MOCHI/releases) ซึ่งไม่ส่งชื่อไฟล์หรือเนื้อหาไฟล์บีบอัด",
+    "MOCHI จะไม่ตรวจหาการอัปเดต ไม่ดาวน์โหลด และไม่ติดตั้ง จนกว่าคุณจะสั่ง การตรวจเป็นคำขอเดียวไปยัง GitHub (github.com/Sepiolina/MOCHI/releases) ซึ่งไม่ส่งชื่อไฟล์หรือเนื้อหาไฟล์บีบอัด",
   "update.check": "ตรวจหาการอัปเดต",
   "update.checking": "กำลังตรวจหาการอัปเดต…",
   "update.startup": "ตรวจหาการอัปเดตเมื่อ MOCHI เริ่มทำงาน (ปิดไว้จนกว่าคุณจะเปิด)",

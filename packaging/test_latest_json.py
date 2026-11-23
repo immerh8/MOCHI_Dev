@@ -40,7 +40,7 @@ class LatestJson(unittest.TestCase):
     def make(self, nsis, deb, version="0.2.0", tag="v0.2.0"):
         (self.dir / "notes.txt").write_text("- a fix\n<b>text</b>\n")
         return self.run_tool(
-            "make", "--version", version, "--tag", tag, "--repo", "immerh8/MOCHI",
+            "make", "--version", version, "--tag", tag, "--repo", "Sepiolina/MOCHI",
             "--notes", str(self.dir / "notes.txt"), "--out", str(self.dir / "latest.json"),
             "--nsis", str(nsis), "--deb", str(deb), "--pub-date", "2026-10-14T00:00:00Z",
         )
@@ -57,7 +57,7 @@ class LatestJson(unittest.TestCase):
         nsis = m["platforms"]["windows-x86_64-nsis"]
         self.assertEqual(
             nsis["url"],
-            "https://github.com/immerh8/MOCHI/releases/download/v0.2.0/MOCHI_0.2.0_x64-setup.exe",
+            "https://github.com/Sepiolina/MOCHI/releases/download/v0.2.0/MOCHI_0.2.0_x64-setup.exe",
         )
         self.assertEqual(nsis["signature"], sig("0.2.0"))
         self.assertIn("<b>text</b>", m["notes"])  # kept as literal text; the app shows it as text

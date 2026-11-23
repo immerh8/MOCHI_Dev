@@ -7,7 +7,7 @@ import type { update as enUpdate } from "../en/update";
 export const update = {
   "update.heading": "更新",
   "update.intro":
-    "除非您主动操作，MOCHI 不会检查更新，也不会下载或安装更新。检查更新只向 GitHub（github.com/immerh8/MOCHI/releases）发出一次请求，请求中不含文件名或压缩文件内容。",
+    "除非您主动操作，MOCHI 不会检查更新，也不会下载或安装更新。检查更新只向 GitHub（github.com/Sepiolina/MOCHI/releases）发出一次请求，请求中不含文件名或压缩文件内容。",
   "update.check": "检查更新",
   "update.checking": "正在检查更新…",
   "update.startup": "MOCHI 启动时检查更新（默认关闭，需手动打开）",

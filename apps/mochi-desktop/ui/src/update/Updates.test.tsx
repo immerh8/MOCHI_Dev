@@ -19,7 +19,7 @@ const settings = (over: Partial<UpdateSettingsView> = {}): UpdateSettingsView =>
   check_on_start: false,
   current_version: "0.1.0",
   install_mode: "in_place",
-  download_page: "https://github.com/immerh8/MOCHI/releases/latest",
+  download_page: "https://github.com/Sepiolina/MOCHI/releases/latest",
   needs_admin_prompt: false,
   ...over,
 });
@@ -30,7 +30,7 @@ const offer = (over: Partial<UpdateOffer> = {}): UpdateOffer => ({
   notes: "- fixes",
   notes_truncated: false,
   install_mode: "in_place",
-  download_page: "https://github.com/immerh8/MOCHI/releases/latest",
+  download_page: "https://github.com/Sepiolina/MOCHI/releases/latest",
   needs_admin_prompt: false,
   ...over,
 });
@@ -198,7 +198,7 @@ describe("the update dialog", () => {
     render(<Updates />);
     await userEvent.click(await screen.findByTestId("update-check"));
     expect(await screen.findByTestId("update-page")).toHaveTextContent(
-      "https://github.com/immerh8/MOCHI/releases/latest",
+      "https://github.com/Sepiolina/MOCHI/releases/latest",
     );
     expect(screen.queryByTestId("update-install")).toBeNull();
   });

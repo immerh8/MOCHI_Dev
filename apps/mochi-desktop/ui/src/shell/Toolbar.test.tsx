@@ -82,7 +82,7 @@ function backend(opts: { rows?: EntryRow[] } = {}) {
           check_on_start: false,
           current_version: "0.1.0",
           install_mode: "manual",
-          download_page: "https://github.com/immerh8/MOCHI/releases/latest",
+          download_page: "https://github.com/Sepiolina/MOCHI/releases/latest",
           needs_admin_prompt: false,
         };
     }

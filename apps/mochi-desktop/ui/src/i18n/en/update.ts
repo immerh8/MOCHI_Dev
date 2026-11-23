@@ -5,7 +5,7 @@
 export const update = {
   "update.heading": "Updates",
   "update.intro":
-    "MOCHI never checks for updates, and never downloads or installs one, unless you ask. A check is one request to GitHub (github.com/immerh8/MOCHI/releases) that carries no file names or archive contents.",
+    "MOCHI never checks for updates, and never downloads or installs one, unless you ask. A check is one request to GitHub (github.com/Sepiolina/MOCHI/releases) that carries no file names or archive contents.",
   "update.check": "Check for updates",
   "update.checking": "Checking for updates…",
   "update.startup": "Check for updates when MOCHI starts (off unless you turn it on)",

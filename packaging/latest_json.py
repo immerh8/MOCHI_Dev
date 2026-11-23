@@ -2,7 +2,7 @@
 """Write the updater manifest `latest.json` for a release (plan D7, T13), or check signatures.
 
     latest_json.py check --version 0.2.0 FILE...      # each FILE.sig exists and names 0.2.0
-    latest_json.py make --version 0.2.0 --tag v0.2.0 --repo immerh8/MOCHI \
+    latest_json.py make --version 0.2.0 --tag v0.2.0 --repo Sepiolina/MOCHI \
         --notes notes.txt --out latest.json \
         --nsis MOCHI_0.2.0_x64-setup.exe --deb MOCHI_0.2.0_amd64.deb
 

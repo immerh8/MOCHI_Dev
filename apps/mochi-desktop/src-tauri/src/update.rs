@@ -36,7 +36,7 @@ use ts_rs::TS;
 
 /// Where a user downloads a release by hand (the Ubuntu fallback, and the page
 /// the Settings text points at). Fixed: never taken from the update manifest.
-pub const RELEASES_PAGE: &str = "https://github.com/immerh8/MOCHI/releases/latest";
+pub const RELEASES_PAGE: &str = "https://github.com/Sepiolina/MOCHI/releases/latest";
 
 /// The most release-note bytes passed to the window.
 pub const MAX_NOTES_BYTES: usize = 16 * 1024;
