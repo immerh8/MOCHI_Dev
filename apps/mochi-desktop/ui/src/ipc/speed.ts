@@ -11,13 +11,18 @@ export function getSpeedSettings(): Promise<SpeedSettingsView> {
   return invoke<SpeedSettingsView>("get_speed_settings");
 }
 
-/** `trustNtfsFlush` (Windows, spec Annex B.2.20) is kept as saved when omitted. */
+/**
+ * `trustNtfsFlush` (Windows, spec Annex B.2.20) and `localHistory` (remember
+ * archives on this computer, Annex B.2.22) are kept as saved when omitted.
+ */
 export function setSpeedSettings(
   allCores: boolean,
   fastExtract: boolean,
   trustNtfsFlush?: boolean,
+  localHistory?: boolean,
 ): Promise<SpeedSettingsView> {
-  return trustNtfsFlush === undefined
-    ? invoke<SpeedSettingsView>("set_speed_settings", { allCores, fastExtract })
-    : invoke<SpeedSettingsView>("set_speed_settings", { allCores, fastExtract, trustNtfsFlush });
+  const args: Record<string, boolean> = { allCores, fastExtract };
+  if (trustNtfsFlush !== undefined) args.trustNtfsFlush = trustNtfsFlush;
+  if (localHistory !== undefined) args.localHistory = localHistory;
+  return invoke<SpeedSettingsView>("set_speed_settings", args);
 }

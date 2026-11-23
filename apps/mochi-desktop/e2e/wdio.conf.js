@@ -20,7 +20,7 @@
 // launching a browser, the path the Help action opens:
 //   python3 packaging/guide.py target/guide     (MOCHI_E2E_GUIDE_DIR overrides)
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -58,6 +58,9 @@ process.env.MOCHI_E2E_PICK = picks.join(path.delimiter);
 // slowed per entry so that its cancel case is deterministic.
 process.env.MOCHI_E2E_PICK_FILE = path.join(os.tmpdir(), "mochi-e2e-picks.txt");
 process.env.MOCHI_E2E_PACE_MS = "100";
+// The local head history and evidence log the app shares with the command-line tool (spec
+// Annex B.2.22): a fresh directory for this run, never the runner's own state directory.
+process.env.MOCHI_STATE_DIR = mkdtempSync(path.join(os.tmpdir(), "mochi-e2e-state-"));
 
 // The `e2e` build resolves the guide from this directory instead of the installer's
 // resource directory, and appends the path it opens to this file instead of starting a

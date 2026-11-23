@@ -1164,6 +1164,10 @@ pub use source::{OsFile, OsSourceTree};
 pub mod find;
 pub use find::OsFindTree;
 
+// ---- The local head history and evidence log (D8, K5; Annex B.2.22) ---------
+
+pub mod history;
+
 fn issue(issues: &mut Vec<AttributeIssue>, attribute: AttributeKind, reason: impl ToString) {
     issues.push(AttributeIssue {
         attribute,

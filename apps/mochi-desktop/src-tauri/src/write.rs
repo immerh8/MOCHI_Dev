@@ -817,6 +817,7 @@ impl Services {
             import.transaction.clone(),
             ctx,
         )?;
+        crate::history::committed(w.archive_id(), &outcome);
         // The commit is published; a failure to close does not undo it.
         let _ = w.close();
         self.staging.consume(&taken, true);
@@ -929,6 +930,7 @@ impl Services {
             ctx.report(DELETE_PHASE, i as u64 + 1, Some(total));
         }
         let outcome = w.commit(tx, ctx)?;
+        crate::history::committed(w.archive_id(), &outcome);
         let _ = w.close();
         let opened = self.archives.reopen(handle);
         let empty = Import {
@@ -973,6 +975,7 @@ impl Services {
             None => tx.clear_comment(),
         };
         let outcome = w.commit(tx, ctx)?;
+        crate::history::committed(w.archive_id(), &outcome);
         let _ = w.close();
         let opened = self.archives.reopen(handle);
         let empty = Import {
@@ -1043,6 +1046,7 @@ fn commit_to(
         TailRepair::Refuse,
     )?;
     let outcome = w.commit(tx, ctx)?;
+    crate::history::committed(w.archive_id(), &outcome);
     // The commit is published; a failure to close does not undo it.
     let _ = w.close();
     Ok(outcome)

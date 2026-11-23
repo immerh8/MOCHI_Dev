@@ -24,7 +24,7 @@ holds the shared definitions.
 
 ## Schemas
 
-| Schema | Written by | Source (`crates/mochi-cli/src`) | Identifier in the output | Status |
+| Schema | Written by | Source (`crates/mochi-cli/src`; the state files: `crates/mochi-core/src/storage/os/history.rs`) | Identifier in the output | Status |
 |---|---|---|---|---|
 | `common.schema.json` | (shared definitions; not an output) | — | — | frozen |
 | `report-v1.schema.json` | `verify --json`, `fsck --json`, `health --json`; the desktop "Test archive" export | `verify_cmd`, `health_cmd` | `schema_version: 1` | frozen |
@@ -32,8 +32,9 @@ holds the shared definitions.
 | `repair-plan-v2.schema.json` | `repair plan --json`; the `--output` file `repair apply --plan` reads | `repair_plan` | `format: "mochi-repair-plan-v2"` | frozen |
 | `gc-plan-v1.schema.json` | `gc plan --json`; the `--output` file `gc apply --plan` reads | `gc_plan` | none (R7 §9, item 6) | frozen |
 | `health-evidence-v1.schema.json` | one line of `<state dir>/evidence/<archive id>.jsonl` | `append_evidence` | `schema: 1` | frozen |
+| `health-evidence-v2.schema.json` | one line of the same log recording a commit this client published (Annex B.2.22) | `append_evidence` | `schema: 2` | frozen when written (2026-11-23) |
 | `health-policy-v1.schema.json` | the file `health --policy` reads (an input) | — | `schema: "mochi-health-policy-v1"` | frozen |
-| `local-heads-v1.schema.json` | `<state dir>/heads.json` | `record` | `version: 1` | frozen |
+| `local-heads-v1.schema.json` | `<state dir>/heads.json` | `record_waiting` | `version: 1` | frozen |
 | `cli-commit.schema.json` | `create`, `append` (also `append --truncate-tail` with nothing to commit) | `emit_commit`, `append` | `schema: "mochi-cli-commit-v1"` | frozen at the 1.0 flip (W20) |
 | `cli-maintenance.schema.json` | `snapshot retain\|expire\|release`, `checkpoint`, `rekey --add-passphrase\|--remove-passphrase` | `commit_maintenance` | `schema: "mochi-cli-maintenance-v1"` | frozen at the 1.0 flip (W20) |
 | `cli-list.schema.json` | `list` | `list_cmd` | `schema: "mochi-cli-list-v1"` | frozen at the 1.0 flip (W20) |

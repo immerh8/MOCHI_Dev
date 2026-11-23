@@ -167,6 +167,58 @@ impl Env<'_> {
         }
     }
 
+    /// Record a head this client published: the freshness anchor (D8) and a
+    /// `commit` evidence record with what the publication knew of its
+    /// durability (Annex B.2.22), which `mochi health` reads.
+    fn remember_commit(
+        &mut self,
+        archive: ArchiveId,
+        seq: u64,
+        commit_id: mochi_format::digest::CommitId,
+        durability: &PublishDurability,
+    ) {
+        self.remember(archive, seq, commit_id);
+        let exit_code = match durability {
+            PublishDurability::Durable => exit::OK,
+            PublishDurability::DirectoryUnconfirmed(_) => exit::DEGRADED,
+        };
+        let head = EvidenceHead {
+            seq,
+            commit_id: commit_id.to_hex(),
+        };
+        match Timestamp::now() {
+            Ok(now) => self.record_evidence(
+                archive,
+                Some(EvidenceRecord::from_commit(
+                    head, durability, &now, exit_code,
+                )),
+            ),
+            Err(e) => self.warn(format!(
+                "the commit was not recorded as health evidence: {e}"
+            )),
+        }
+    }
+
+    /// The same for the new archive a rewrite published (`compact`,
+    /// `gc apply`, `migrate`, `rekey --reencrypt`). The head's commit record
+    /// is read without a key (an Encrypted rewrite has a new data key).
+    fn remember_rewrite(&mut self, output: &Path, unconfirmed: Option<&String>) {
+        let head = open_archive(output).and_then(|s| {
+            let loc = locate_head(&s, &self.read.limits)?;
+            read_commit(&s, &loc.footer, &self.read)
+        });
+        match head {
+            Ok((commit, commit_id)) => {
+                let durability = match unconfirmed {
+                    None => PublishDurability::Durable,
+                    Some(why) => PublishDurability::DirectoryUnconfirmed(why.clone()),
+                };
+                self.remember_commit(commit.archive_id, commit.seq, commit_id, &durability);
+            }
+            Err(e) => self.warn(format!("the new archive's head was not recorded: {e}")),
+        }
+    }
+
     /// Record a head this client saw, as a later freshness anchor (D8).
     /// Failing to record is a warning, never a failure of the command.
     fn remember(
@@ -506,7 +558,12 @@ pub fn create(env: &mut Env<'_>, a: &CreateArgs) -> Result<u8> {
     if let Err(e) = w.close() {
         env.warn(format!("closing the archive after the commit: {e}"));
     }
-    env.remember(archive_id, outcome.seq, outcome.commit_id);
+    env.remember_commit(
+        archive_id,
+        outcome.seq,
+        outcome.commit_id,
+        &outcome.durability,
+    );
     Ok(emit_commit(
         env, "create", &a.archive, archive_id, &outcome, &imported, None,
     ))
@@ -600,7 +657,12 @@ pub fn append(env: &mut Env<'_>, a: &AppendArgs) -> Result<u8> {
     if let Err(e) = w.close() {
         env.warn(format!("closing the archive after the commit: {e}"));
     }
-    env.remember(archive_id, outcome.seq, outcome.commit_id);
+    env.remember_commit(
+        archive_id,
+        outcome.seq,
+        outcome.commit_id,
+        &outcome.durability,
+    );
     Ok(emit_commit(
         env,
         "append",
@@ -2208,7 +2270,12 @@ fn commit_maintenance(
     if let Err(e) = w.close() {
         env.warn(format!("closing the archive after the commit: {e}"));
     }
-    env.remember(archive_id, outcome.seq, outcome.commit_id);
+    env.remember_commit(
+        archive_id,
+        outcome.seq,
+        outcome.commit_id,
+        &outcome.durability,
+    );
     let unconfirmed = match &outcome.durability {
         PublishDurability::Durable => None,
         PublishDurability::DirectoryUnconfirmed(why) => Some(why.clone()),
@@ -2526,11 +2593,8 @@ fn rewrite(
         env.warn(format!("releasing the source archive's lock: {e}"));
     }
     // Remember the new archive's head: a later verify of it then has an
-    // anchor (D8).
-    match open_archive(output).and_then(|s| open_head(&s, &env.read)) {
-        Ok(h) => env.remember(h.commit.archive_id, h.seq(), h.commit_id),
-        Err(e) => env.warn(format!("the new archive's head was not recorded: {e}")),
-    }
+    // anchor (D8), and health knows how its publication went.
+    env.remember_rewrite(output, report.durability_unconfirmed.as_ref());
     let code = if report.durability_unconfirmed.is_none() {
         exit::OK
     } else {
@@ -2645,11 +2709,8 @@ pub fn migrate_cmd(env: &mut Env<'_>, a: &MigrateArgs) -> Result<u8> {
         &ctx,
     )?;
     // Remember the new archive's head: a later verify of it then has an
-    // anchor (D8).
-    match open_archive(&a.output).and_then(|s| open_head(&s, &env.read)) {
-        Ok(h) => env.remember(h.commit.archive_id, h.seq(), h.commit_id),
-        Err(e) => env.warn(format!("the new archive's head was not recorded: {e}")),
-    }
+    // anchor (D8), and health knows how its publication went.
+    env.remember_rewrite(&a.output, report.durability_unconfirmed.as_ref());
     let code = if report.durability_unconfirmed.is_none() {
         exit::OK
     } else {
@@ -3192,7 +3253,11 @@ pub fn repair_apply(env: &mut Env<'_>, a: &RepairApplyArgs) -> Result<u8> {
     // anchor (D8).
     match open_archive(&a.output).and_then(|s| open_head(&s, &env.read)) {
         Ok(h) => {
-            env.remember(h.commit.archive_id, h.seq(), h.commit_id);
+            let durability = match &report.durability_unconfirmed {
+                None => PublishDurability::Durable,
+                Some(why) => PublishDurability::DirectoryUnconfirmed(why.clone()),
+            };
+            env.remember_commit(h.commit.archive_id, h.seq(), h.commit_id, &durability);
             // The re-verification before publication is evidence about the
             // new archive, but only a complete repair says nothing was left
             // out: a partial one is not recorded (the user runs `verify`).
@@ -3485,6 +3550,7 @@ fn reencrypt_cmd(env: &mut Env<'_>, a: &RekeyArgs) -> Result<u8> {
     if let Err(e) = w.close() {
         env.warn(format!("releasing the source archive's lock: {e}"));
     }
+    env.remember_rewrite(output, report.durability_unconfirmed.as_ref());
     let code = if report.durability_unconfirmed.is_none() {
         exit::OK
     } else {

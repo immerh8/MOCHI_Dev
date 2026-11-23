@@ -1782,6 +1782,11 @@ pub struct SpeedSettingsView {
     /// Windows: a folder flush on a local NTFS drive counts as saved when an
     /// archive is created (spec Annex B.2.20). Off by default (policy B).
     pub trust_ntfs_flush: bool,
+    /// Remember archives on this computer: each one's last-seen head (for the
+    /// freshness check) and the results of tests and commits, in the state
+    /// directory the command-line tool shares (spec Annex B.2.22). On by
+    /// default.
+    pub local_history: bool,
     /// Whether that setting applies here (Windows only); the UI shows it then.
     pub windows: bool,
 }

@@ -41,6 +41,7 @@ const SCHEMAS: &[&str] = &[
     "repair-plan-v2.schema.json",
     "gc-plan-v1.schema.json",
     "health-evidence-v1.schema.json",
+    "health-evidence-v2.schema.json",
     "health-policy-v1.schema.json",
     "local-heads-v1.schema.json",
     "cli-commit.schema.json",
@@ -64,6 +65,16 @@ const SCHEMAS: &[&str] = &[
 const SPEC_EXAMPLE_CASE: &str = "core-corrupt-chunk-older";
 
 // ---- files ----------------------------------------------------------------------
+
+/// The schema of one evidence log line, by its in-band number: a commit
+/// record is schema 2 (Annex B.2.22), every other record schema 1.
+fn evidence_schema(v: &Value) -> &'static str {
+    if v["schema"] == 2 {
+        "health-evidence-v2.schema.json"
+    } else {
+        "health-evidence-v1.schema.json"
+    }
+}
 
 fn repo() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -364,16 +375,20 @@ fn readme_table() -> Vec<(String, BTreeSet<String>)> {
 
 /// Every function in the CLI's sources that writes JSON: it emits a value,
 /// serializes one to bytes, or prints the error line. Test modules excluded.
+/// The local head history and evidence log the CLI writes live in
+/// `mochi-core` (shared with the desktop app, Annex B.2.22) and are scanned
+/// too.
 fn json_writing_functions() -> BTreeSet<String> {
     let mut found = BTreeSet::new();
     for file in [
-        "commands.rs",
-        "lib.rs",
-        "state.rs",
-        "render.rs",
-        "passphrase.rs",
+        "crates/mochi-cli/src/commands.rs",
+        "crates/mochi-cli/src/lib.rs",
+        "crates/mochi-cli/src/state.rs",
+        "crates/mochi-cli/src/render.rs",
+        "crates/mochi-cli/src/passphrase.rs",
+        "crates/mochi-core/src/storage/os/history.rs",
     ] {
-        let text = repo_file(&format!("crates/mochi-cli/src/{file}"));
+        let text = repo_file(file);
         let mut current = String::new();
         for line in text.lines() {
             if line.starts_with("#[cfg(test)]") {
@@ -670,7 +685,7 @@ fn r8_reports_evidence_and_heads_validate() {
                 let text = fs::read_to_string(e.unwrap().path()).unwrap();
                 for line in text.lines() {
                     let v: Value = serde_json::from_str(line).unwrap();
-                    valid("health-evidence-v1.schema.json", &v, &c.name);
+                    valid(evidence_schema(&v), &v, &c.name);
                     evidence += 1;
                 }
             }
@@ -1302,8 +1317,8 @@ fn corpus() -> Vec<(&'static str, Value)> {
         let text = fs::read_to_string(e.unwrap().path()).unwrap();
         for line in text.lines() {
             let v: Value = serde_json::from_str(line).unwrap();
-            valid("health-evidence-v1.schema.json", &v, line);
-            keep("health-evidence-v1.schema.json", v);
+            valid(evidence_schema(&v), &v, line);
+            keep(evidence_schema(&v), v);
         }
     }
     let heads = read_json(&a.p("state/heads.json"));
