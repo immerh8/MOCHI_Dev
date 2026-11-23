@@ -897,7 +897,11 @@ mod tests {
 
         let confirmed = EvidenceRecord::from_commit(head(5), &PublishDurability::Durable, &at, 0);
         assert!(confirmed.validate().is_ok());
-        let r = run(std::slice::from_ref(&confirmed), &HealthPolicy::default(), now());
+        let r = run(
+            std::slice::from_ref(&confirmed),
+            &HealthPolicy::default(),
+            now(),
+        );
         assert_eq!(dim(&r, Dimension::Durability), Status::Degraded);
         let why = r.skipped.iter().find(|s| s.item == "durability").unwrap();
         assert!(
