@@ -20,7 +20,7 @@
 // launching a browser, the path the Help action opens:
 //   python3 packaging/guide.py target/guide     (MOCHI_E2E_GUIDE_DIR overrides)
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -59,8 +59,11 @@ process.env.MOCHI_E2E_PICK = picks.join(path.delimiter);
 process.env.MOCHI_E2E_PICK_FILE = path.join(os.tmpdir(), "mochi-e2e-picks.txt");
 process.env.MOCHI_E2E_PACE_MS = "100";
 // The local head history and evidence log the app shares with the command-line tool (spec
-// Annex B.2.22): a fresh directory for this run, never the runner's own state directory.
-process.env.MOCHI_STATE_DIR = mkdtempSync(path.join(os.tmpdir(), "mochi-e2e-state-"));
+// Annex B.2.22): never the runner's own state directory. A fixed path, emptied once in
+// onPrepare: this file is evaluated again in every worker, and the app (started by the
+// launcher's tauri-driver) and the specs (in workers) must name the same directory.
+const stateDir = path.join(os.tmpdir(), "mochi-e2e-state");
+process.env.MOCHI_STATE_DIR = stateDir;
 
 // The `e2e` build resolves the guide from this directory instead of the installer's
 // resource directory, and appends the path it opens to this file instead of starting a
@@ -139,6 +142,9 @@ export const config = {
   },
 
   onPrepare: () => {
+    // No head history or evidence left over from an earlier run.
+    rmSync(stateDir, { recursive: true, force: true });
+    mkdirSync(stateDir, { recursive: true });
     // The files the cold start adds, made fresh.
     rmSync(path.dirname(coldDir), { recursive: true, force: true });
     mkdirSync(coldDir, { recursive: true });
