@@ -9,7 +9,7 @@ import { afterEach, expect, test } from "vitest";
 import type { SpeedSettingsView } from "../ipc/speed";
 import { Speed } from "./Speed";
 
-function backend(initial: SpeedSettingsView = { all_cores: true, fast_extract: false, cores: 6, trust_ntfs_flush: false, local_history: true, windows: false }, failSet = false) {
+function backend(initial: SpeedSettingsView = { all_cores: true, fast_extract: false, cores: 6, trust_ntfs_flush: false, local_history: true, wait_for_writer: false, windows: false }, failSet = false) {
   const calls: { cmd: string; args: Record<string, unknown> }[] = [];
   let state = initial;
   mockIPC((cmd, args) => {
@@ -24,6 +24,7 @@ function backend(initial: SpeedSettingsView = { all_cores: true, fast_extract: f
         fast_extract: a.fastExtract as boolean,
         trust_ntfs_flush: (a.trustNtfsFlush as boolean | undefined) ?? state.trust_ntfs_flush,
         local_history: (a.localHistory as boolean | undefined) ?? state.local_history,
+        wait_for_writer: (a.waitForWriter as boolean | undefined) ?? state.wait_for_writer,
       };
       return state;
     }
@@ -62,7 +63,7 @@ test("turning it off asks Rust for one core, and back on for every core", async 
 
 test("a failed change is shown and the switch keeps the saved state", async () => {
   const user = userEvent.setup();
-  backend({ all_cores: true, fast_extract: false, cores: 4, trust_ntfs_flush: false, local_history: true, windows: false }, true);
+  backend({ all_cores: true, fast_extract: false, cores: 4, trust_ntfs_flush: false, local_history: true, wait_for_writer: false, windows: false }, true);
   render(<Speed />);
   const box = screen.getByTestId("speed-all-cores");
   await waitFor(() => expect(box).toBeEnabled());
@@ -82,7 +83,7 @@ test("fast extract is off by default and its note names the cost", async () => {
 
 test("turning fast extract on keeps the core setting as it is", async () => {
   const user = userEvent.setup();
-  const calls = backend({ all_cores: false, fast_extract: false, cores: 6, trust_ntfs_flush: false, local_history: true, windows: false });
+  const calls = backend({ all_cores: false, fast_extract: false, cores: 6, trust_ntfs_flush: false, local_history: true, wait_for_writer: false, windows: false });
   render(<Speed />);
   const box = screen.getByTestId("speed-fast-extract");
   await waitFor(() => expect(box).toBeEnabled());
@@ -105,7 +106,7 @@ test("the NTFS setting is hidden off Windows", async () => {
 
 test("on Windows the NTFS setting is off by default and turning it on is saved", async () => {
   const user = userEvent.setup();
-  const calls = backend({ all_cores: false, fast_extract: true, cores: 4, trust_ntfs_flush: false, local_history: true, windows: true });
+  const calls = backend({ all_cores: false, fast_extract: true, cores: 4, trust_ntfs_flush: false, local_history: true, wait_for_writer: false, windows: true });
   render(<Speed />);
   const box = await screen.findByTestId("speed-ntfs-flush");
   await waitFor(() => expect(box).toBeEnabled());
@@ -136,5 +137,21 @@ test("remember archives is on by default and turning it off asks only for that",
   await waitFor(() => expect(box).not.toBeChecked());
   expect(calls.filter((c) => c.cmd === "set_speed_settings").map((c) => c.args)).toEqual([
     { allCores: true, fastExtract: false, localHistory: false },
+  ]);
+});
+
+// Spec Annex B.2.23: waiting for another writer is off by default (the spec's
+// fail-on-conflict), and turning it on sends only that change.
+test("waiting for another writer is off by default and turning it on asks only for that", async () => {
+  const user = userEvent.setup();
+  const calls = backend();
+  render(<Speed />);
+  const box = screen.getByTestId("settings-wait-for-writer");
+  await waitFor(() => expect(box).toBeEnabled());
+  expect(box).not.toBeChecked();
+  await user.click(box);
+  await waitFor(() => expect(box).toBeChecked());
+  expect(calls.filter((c) => c.cmd === "set_speed_settings").map((c) => c.args)).toEqual([
+    { allCores: true, fastExtract: false, waitForWriter: true },
   ]);
 });

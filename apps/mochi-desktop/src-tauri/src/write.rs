@@ -996,6 +996,9 @@ fn writer_options(read: ReadOptions) -> WriterOptions {
         read,
         record_time: true,
         threads: crate::speed::writer_threads(),
+        // Add, Delete, Comment append: wait for another writer if the user
+        // asked to (Annex B.2.23).
+        lock_wait: crate::speed::lock_wait(),
         ..WriterOptions::default()
     }
 }

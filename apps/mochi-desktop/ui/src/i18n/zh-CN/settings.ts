@@ -41,6 +41,9 @@ export const settings = {
   "settings.localHistoryTitle": "在这台电脑上记住压缩文件",
   "settings.localHistoryShort": "开：每次测试都能判断压缩文件是否比以前见过的版本更旧，状况汇总也会保留以前的结果。",
   "settings.localHistoryNote": "把每个压缩文件见过的最新版本以及测试和更改的结果，保存在 mochi 命令行使用的同一个文件夹中，两者看到的是同一份记录。不会向任何压缩文件写入内容。关：新旧程度始终为 UNKNOWN，状况汇总只包括此窗口。默认开启。",
+  "settings.waitForWriterTitle": "其他 MOCHI 程序正在写入时等待",
+  "settings.waitForWriterShort": "向另一个 MOCHI 窗口或 mochi 命令行正在写入的压缩文件添加内容时，最多等待两分钟让它完成，而不是立即停止。",
+  "settings.waitForWriterNote": "同一时间只有一个程序写入一个压缩文件。开启后，更改会排队等待，然后添加在另一个程序的更改之后。关闭（默认）：立即停止并说明有另一个程序正在写入，不更改任何内容。",
   "settings.heading": "设置",
   "settings.crashHeading": "崩溃报告",
   "settings.crashPolicy":

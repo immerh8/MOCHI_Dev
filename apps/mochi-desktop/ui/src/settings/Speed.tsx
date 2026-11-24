@@ -25,6 +25,8 @@ export function Speed() {
   const flushNoteId = useId();
   const historyId = useId();
   const historyNoteId = useId();
+  const waitId = useId();
+  const waitNoteId = useId();
 
   useEffect(() => {
     let live = true;
@@ -46,11 +48,12 @@ export function Speed() {
     fastExtract: boolean,
     trustNtfsFlush?: boolean,
     localHistory?: boolean,
+    waitForWriter?: boolean,
   ) => {
     setError(null);
     setBusy(true);
     try {
-      setState(await setSpeedSettings(allCores, fastExtract, trustNtfsFlush, localHistory));
+      setState(await setSpeedSettings(allCores, fastExtract, trustNtfsFlush, localHistory, waitForWriter));
     } catch (e) {
       setError(errorText(t("settings.speedSaveFailed"), e));
     } finally {
@@ -135,6 +138,27 @@ export function Speed() {
           disabled={state === null || busy}
           onChange={(e) =>
             void change(state?.all_cores ?? true, state?.fast_extract ?? false, undefined, e.target.checked)
+          }
+        />
+      </SettingRow>
+      {/* Spec Annex B.2.23: off by default, the spec's fail-on-conflict. */}
+      <SettingRow
+        title={t("settings.waitForWriterTitle")}
+        titleFor={waitId}
+        description={t("settings.waitForWriterShort")}
+        descriptionId={waitNoteId}
+        more={t("settings.waitForWriterNote")}
+      >
+        <input
+          id={waitId}
+          type="checkbox"
+          className="switch"
+          data-testid="settings-wait-for-writer"
+          aria-describedby={waitNoteId}
+          checked={state?.wait_for_writer ?? false}
+          disabled={state === null || busy}
+          onChange={(e) =>
+            void change(state?.all_cores ?? true, state?.fast_extract ?? false, undefined, undefined, e.target.checked)
           }
         />
       </SettingRow>

@@ -1262,6 +1262,7 @@ fn speed_view() -> SpeedSettingsView {
         cores: u32::try_from(crate::speed::cores()).unwrap_or(u32::MAX),
         trust_ntfs_flush: crate::speed::settings().trust_ntfs_flush,
         local_history: crate::speed::settings().local_history,
+        wait_for_writer: crate::speed::settings().wait_for_writer,
         windows: cfg!(windows),
     }
 }
@@ -1281,6 +1282,7 @@ pub async fn set_speed_settings(
     fast_extract: bool,
     trust_ntfs_flush: Option<bool>,
     local_history: Option<bool>,
+    wait_for_writer: Option<bool>,
 ) -> Result<SpeedSettingsView, IpcError> {
     blocking(move || {
         // Absent keeps the saved choice (D30, Windows only in effect).
@@ -1288,11 +1290,14 @@ pub async fn set_speed_settings(
             trust_ntfs_flush.unwrap_or(crate::speed::settings().trust_ntfs_flush);
         // Absent keeps the saved choice (Annex B.2.22).
         let local_history = local_history.unwrap_or(crate::speed::settings().local_history);
+        // Absent keeps the saved choice (Annex B.2.23).
+        let wait_for_writer = wait_for_writer.unwrap_or(crate::speed::settings().wait_for_writer);
         crate::speed::set(crate::speed::Settings {
             all_cores,
             fast_extract,
             trust_ntfs_flush,
             local_history,
+            wait_for_writer,
         })?;
         Ok(speed_view())
     })

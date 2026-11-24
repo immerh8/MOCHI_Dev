@@ -73,6 +73,14 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub trust_ntfs_directory_flush: bool,
 
+    /// Appending to an existing archive: if another MOCHI program is writing
+    /// to it, wait up to SECONDS (1 to 3600) for it to finish instead of
+    /// failing at once with LOCK_CONFLICT (spec Annex B.2.23). The commit is
+    /// built on whatever that writer left. Default: no wait.
+    #[arg(long, global = true, value_name = "SECONDS",
+          value_parser = clap::value_parser!(u64).range(1..=3600))]
+    pub wait_for_lock: Option<u64>,
+
     #[command(subcommand)]
     pub command: Command,
 }

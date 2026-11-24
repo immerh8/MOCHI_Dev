@@ -192,6 +192,7 @@ where
         state::HeadStore::locate(cli.state_dir.as_deref())
     };
     let mut env = commands::Env {
+        lock_wait: cli.wait_for_lock.map(std::time::Duration::from_secs),
         flush: if cli.trust_ntfs_directory_flush {
             mochi_core::storage::os::WindowsDirectoryFlush::TrustLocalNtfs
         } else {

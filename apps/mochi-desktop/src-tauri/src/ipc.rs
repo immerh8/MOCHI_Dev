@@ -1787,6 +1787,10 @@ pub struct SpeedSettingsView {
     /// directory the command-line tool shares (spec Annex B.2.22). On by
     /// default.
     pub local_history: bool,
+    /// Adding to an archive another MOCHI program is writing to waits up to
+    /// two minutes for it instead of refusing at once (spec Annex B.2.23).
+    /// Off by default.
+    pub wait_for_writer: bool,
     /// Whether that setting applies here (Windows only); the UI shows it then.
     pub windows: bool,
 }

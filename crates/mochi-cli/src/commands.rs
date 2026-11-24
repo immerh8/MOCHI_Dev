@@ -69,6 +69,8 @@ pub struct Env<'a> {
     /// What a directory flush counts as on Windows when an archive or sidecar
     /// is created (spec Annex B.2.20, D30). Policy B unless the user chose.
     pub flush: WindowsDirectoryFlush,
+    /// `--wait-for-lock`: how long an append waits for another writer.
+    pub lock_wait: Option<std::time::Duration>,
     pub out: &'a mut dyn Write,
     pub err: &'a mut dyn Write,
     pub read: ReadOptions,
@@ -593,6 +595,7 @@ pub fn append(env: &mut Env<'_>, a: &AppendArgs) -> Result<u8> {
     let opts = WriterOptions {
         read: env.read.clone(),
         record_time: true,
+        lock_wait: env.lock_wait,
         ..WriterOptions::default()
     };
     let (mut w, truncation) =
@@ -2234,6 +2237,7 @@ fn open_writer(
     archive: &Path,
     read: ReadOptions,
     kdf: Option<mochi_format::kdf::KdfParams>,
+    lock_wait: Option<std::time::Duration>,
 ) -> Result<ArchiveWriter<OsStorage>> {
     // An append never needs a directory flush (plan O12); the default stays.
     let (mut dir, name) = location(archive, WindowsDirectoryFlush::default())?;
@@ -2241,6 +2245,7 @@ fn open_writer(
         read,
         kdf,
         record_time: true,
+        lock_wait,
         ..WriterOptions::default()
     };
     Ok(
@@ -2329,7 +2334,7 @@ fn require_confirm(confirm: bool, what: &str) -> Result<()> {
 
 pub fn snapshot_retain(env: &mut Env<'_>, a: &RetainArgs) -> Result<u8> {
     env.unlock(&a.archive, Need::Required)?;
-    let w = open_writer(&a.archive, env.read.clone(), None)?;
+    let w = open_writer(&a.archive, env.read.clone(), None, env.lock_wait)?;
     let mut tx = Transaction::new();
     tx.hold(a.label.as_bytes(), a.snapshot);
     let detail = json!({"hold": {"label": a.label, "seq": a.snapshot}});
@@ -2344,7 +2349,7 @@ pub fn snapshot_retain(env: &mut Env<'_>, a: &RetainArgs) -> Result<u8> {
 pub fn snapshot_expire(env: &mut Env<'_>, a: &ExpireArgs) -> Result<u8> {
     require_confirm(a.confirm, "expiring a snapshot")?;
     env.unlock(&a.archive, Need::Required)?;
-    let w = open_writer(&a.archive, env.read.clone(), None)?;
+    let w = open_writer(&a.archive, env.read.clone(), None, env.lock_wait)?;
     let mut tx = Transaction::new();
     for s in &a.snapshots {
         tx.expire(*s);
@@ -2367,7 +2372,7 @@ pub fn snapshot_expire(env: &mut Env<'_>, a: &ExpireArgs) -> Result<u8> {
 pub fn snapshot_release(env: &mut Env<'_>, a: &ReleaseArgs) -> Result<u8> {
     env.unlock(&a.archive, Need::Required)?;
     require_confirm(a.confirm, "releasing a legal hold")?;
-    let w = open_writer(&a.archive, env.read.clone(), None)?;
+    let w = open_writer(&a.archive, env.read.clone(), None, env.lock_wait)?;
     let mut tx = Transaction::new();
     tx.release(a.label.as_bytes());
     let what = format!("legal hold {} released", text(a.label.as_bytes()));
@@ -2377,7 +2382,7 @@ pub fn snapshot_release(env: &mut Env<'_>, a: &ReleaseArgs) -> Result<u8> {
 
 pub fn checkpoint(env: &mut Env<'_>, a: &CheckpointArgs) -> Result<u8> {
     env.unlock(&a.archive, Need::Required)?;
-    let mut w = open_writer(&a.archive, env.read.clone(), None)?;
+    let mut w = open_writer(&a.archive, env.read.clone(), None, env.lock_wait)?;
     w.request_checkpoint();
     commit_maintenance(
         env,
@@ -2544,7 +2549,7 @@ fn rewrite(
     let (mut out_dir, out_name) = location(output, env.flush)?;
     // The source's publication lock is held from here until the new archive
     // is published, so no commit can land in between (D18).
-    let w = open_writer(archive, env.read.clone(), None)?;
+    let w = open_writer(archive, env.read.clone(), None, env.lock_wait)?;
     let keep = match &saved {
         None => Keep::Every,
         Some((value, archive_id, head)) => {
@@ -3492,7 +3497,7 @@ pub fn rekey(env: &mut Env<'_>, a: &RekeyArgs) -> Result<u8> {
     };
     let added = add.len();
     let tx = rekey::rewrap_transaction(add, remove.clone())?;
-    let w = open_writer(&a.archive, env.read.clone(), None)?;
+    let w = open_writer(&a.archive, env.read.clone(), None, env.lock_wait)?;
     let what = format!(
         "key envelopes changed: {added} added, {} removed; the data key and the data are \
          unchanged. Removing an envelope is not revocation: the envelope stays in the file's \
@@ -3536,7 +3541,7 @@ fn reencrypt_cmd(env: &mut Env<'_>, a: &RekeyArgs) -> Result<u8> {
         ));
     }
     let (mut out_dir, out_name) = location(output, env.flush)?;
-    let w = open_writer(&a.archive, env.read.clone(), None)?;
+    let w = open_writer(&a.archive, env.read.clone(), None, env.lock_wait)?;
     let report = mochi_core::rekey::reencrypt(
         &w,
         &mut out_dir,

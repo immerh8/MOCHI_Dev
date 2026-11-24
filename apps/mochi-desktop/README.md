@@ -214,6 +214,10 @@ xvfb-run -a pnpm test     # Linux (apt: webkit2gtk-driver xvfb); on Windows: pnp
   computer** (`compression-settings.json`, `local_history`, on when absent) turns it off: then
   no anchor and this session's evidence in memory only. Unit tests never touch the real state
   directory (`history::use_dir_for_test`).
+- **Waiting for another writer (spec Annex B.2.23).** Settings → Performance, **Wait if another
+  MOCHI program is writing** (`compression-settings.json`, `wait_for_writer`, off when absent):
+  Add, Delete and Comment then wait up to two minutes for another writer's lock
+  (`speed::lock_wait`, passed as `WriterOptions::lock_wait`) instead of failing at once.
 - **Searchability is not listed in a report while it means nothing.** In 1.0 it is always
   `UNSUPPORTED` (no search index exists); the report hides it unless it is required or has any
   other status (`check/messages.ts`, `isHidden`). The exported JSON keeps it.

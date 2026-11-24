@@ -39,6 +39,9 @@ export const settings = {
   "settings.localHistoryTitle": "Remember archives on this computer",
   "settings.localHistoryShort": "On: each test can tell if an archive is an older copy than one seen before, and the health summary keeps earlier results.",
   "settings.localHistoryNote": "Saves each archive's latest version seen and the results of tests and changes in the same folder the mochi command line uses, so both see the same history. Nothing is written into any archive. Off: freshness is always UNKNOWN and the health summary covers only this window. On by default.",
+  "settings.waitForWriterTitle": "Wait if another MOCHI program is writing",
+  "settings.waitForWriterShort": "When you add to an archive that another MOCHI window or the mochi command line is writing to, wait up to two minutes for it to finish instead of stopping at once.",
+  "settings.waitForWriterNote": "Only one program writes to an archive at a time. With this on, the change waits its turn and is then added after the other program's. Off (the default): it stops at once, says another program is writing, and nothing is changed.",
   "settings.heading": "Settings",
   "settings.crashHeading": "Crash reports",
   "settings.crashPolicy":
