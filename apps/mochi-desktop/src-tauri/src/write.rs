@@ -33,7 +33,9 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use mochi_core::catalog::path::ArchivePath;
 use mochi_core::descriptor::Profile;
-use mochi_core::import::{import_into, Import, ImportOptions, SourceKind, SourceMeta, SourceTree};
+use mochi_core::import::{
+    import_recording, Import, ImportOptions, ImportedEntry, SourceKind, SourceMeta, SourceTree,
+};
 use mochi_core::job::JobContext;
 use mochi_core::keys::KeySession;
 use mochi_core::object::OsIds;
@@ -41,7 +43,8 @@ use mochi_core::publish::{
     ArchiveWriter, CommitOutcome, FileSource, PublishDurability, ReadOptions, TailRepair,
     Transaction, WriterOptions,
 };
-use mochi_core::storage::os::{OsDir, OsSourceTree};
+use mochi_core::sources::{check_removable, Verdict};
+use mochi_core::storage::os::{OsDir, OsReadStorage, OsSourceTree};
 use mochi_core::{ErrorCode, MochiError, Result};
 use tauri::DragDropEvent;
 
@@ -529,6 +532,8 @@ struct CreateChoices<'a> {
     tar_compatible: bool,
     passphrase: Option<&'a Secret>,
     recovery_percent: Option<u16>,
+    /// Move the sources to the Bin after the commit (Annex B.2.23 item 3).
+    delete_sources: bool,
 }
 
 /// What a finished job reports.
@@ -648,7 +653,7 @@ impl Services {
             | JobRequest::Reencrypt { .. } => {
                 crate::rekey::validate(&self.archives, &self.staging, request)
             }
-            JobRequest::AddToArchive { handle } => {
+            JobRequest::AddToArchive { handle, .. } => {
                 self.archives.path(*handle)?;
                 if self.staging.take().items.is_empty() {
                     return Err(invalid("nothing is staged: choose files or a folder first"));
@@ -723,12 +728,14 @@ impl Services {
                 tar_compatible,
                 passphrase,
                 recovery_percent,
+                delete_sources,
             } => self.create(
                 CreateChoices {
                     preset: *preset,
                     tar_compatible: *tar_compatible,
                     passphrase: passphrase.as_ref(),
                     recovery_percent: *recovery_percent,
+                    delete_sources: delete_sources.unwrap_or(false),
                 },
                 ctx,
             ),
@@ -740,7 +747,10 @@ impl Services {
                 crate::rekey::run(&self.archives, &self.staging, request, ctx)
             }
             JobRequest::ScanArchive { .. } => crate::scan::run(&self.archives, request, ctx),
-            JobRequest::AddToArchive { handle } => self.add(*handle, ctx),
+            JobRequest::AddToArchive {
+                handle,
+                delete_sources,
+            } => self.add(*handle, delete_sources.unwrap_or(false), ctx),
             JobRequest::DeleteFromArchive { handle, keys } => self.delete(*handle, keys, ctx),
             JobRequest::SetArchiveComment { handle, comment } => {
                 self.set_comment(*handle, comment.as_deref(), ctx)
@@ -777,6 +787,7 @@ impl Services {
             tar_compatible,
             passphrase,
             recovery_percent,
+            delete_sources,
         } = choices;
         // The key is opened before anything is created (D20): a bad
         // passphrase leaves no file and no partial output.
@@ -793,7 +804,7 @@ impl Services {
             .destination
             .clone()
             .ok_or_else(|| invalid("choose where to save the new archive first"))?;
-        let import = gather(&taken, Transaction::new(), ctx)?;
+        let (import, entries) = gather_recording(&taken, Transaction::new(), ctx)?;
         let (mut dir, name) = location(&destination)?;
         let opts = WriterOptions {
             read: read.clone(),
@@ -821,10 +832,19 @@ impl Services {
         // The commit is published; a failure to close does not undo it.
         let _ = w.close();
         self.staging.consume(&taken, true);
+        // Annex B.2.23 item 3: only now, and only what reads back.
+        let sources = delete_sources.then(|| move_sources(&destination, &read, &entries, ctx));
         // The new archive opens with the same key session, so the user lands
         // in it unlocked without typing the passphrase again.
         let opened = self.archives.open(&destination, read);
-        Ok(done(CommitOperation::Create, &outcome, &import, 0, opened))
+        Ok(done(
+            CommitOperation::Create,
+            &outcome,
+            &import,
+            0,
+            opened,
+            sources,
+        ))
     }
 
     /// Write the staged sources as a plain ZIP or tar file (plan O31). The
@@ -867,20 +887,33 @@ impl Services {
         Ok(export_done(format, &destination, &report))
     }
 
-    fn add(&self, handle: ArchiveHandle, ctx: &JobContext<'_>) -> Result<JobDone> {
+    fn add(
+        &self,
+        handle: ArchiveHandle,
+        delete_sources: bool,
+        ctx: &JobContext<'_>,
+    ) -> Result<JobDone> {
         let taken = self.staging.take();
         let path = self.archives.path(handle)?;
-        let import = gather(&taken, Transaction::new(), ctx)?;
+        let (import, entries) = gather_recording(&taken, Transaction::new(), ctx)?;
         if import.transaction.is_empty() {
             return Err(invalid(
                 "nothing to add: the staged items contain no files or folders that are stored",
             ));
         }
         let read = self.archives.read_options(handle)?;
-        let outcome = commit_to(&path, read, import.transaction.clone(), ctx)?;
+        let outcome = commit_to(&path, read.clone(), import.transaction.clone(), ctx)?;
         self.staging.consume(&taken, false);
+        let sources = delete_sources.then(|| move_sources(&path, &read, &entries, ctx));
         let opened = self.archives.reopen(handle);
-        Ok(done(CommitOperation::Add, &outcome, &import, 0, opened))
+        Ok(done(
+            CommitOperation::Add,
+            &outcome,
+            &import,
+            0,
+            opened,
+            sources,
+        ))
     }
 
     fn delete(
@@ -946,6 +979,7 @@ impl Services {
             &empty,
             total,
             opened,
+            None,
         ))
     }
 }
@@ -985,7 +1019,14 @@ impl Services {
             bytes: 0,
             skipped: Vec::new(),
         };
-        Ok(done(CommitOperation::Comment, &outcome, &empty, 0, opened))
+        Ok(done(
+            CommitOperation::Comment,
+            &outcome,
+            &empty,
+            0,
+            opened,
+            None,
+        ))
     }
 }
 
@@ -1003,14 +1044,109 @@ fn writer_options(read: ReadOptions) -> WriterOptions {
     }
 }
 
-/// Walk the staged sources into `tx`. Nothing is written.
-fn gather(taken: &Taken, tx: Transaction, ctx: &JobContext<'_>) -> Result<Import> {
+/// Walk the staged sources into `tx`, recording where each imported entry
+/// came from, for "Delete files after archiving" (Annex B.2.23 item 3).
+/// Nothing is written.
+fn gather_recording(
+    taken: &Taken,
+    tx: Transaction,
+    ctx: &JobContext<'_>,
+) -> Result<(Import, Vec<ImportedEntry<PathBuf>>)> {
     let named: Vec<(ArchivePath, PathBuf)> = taken
         .items
         .iter()
         .map(|s| (s.name.clone(), s.path.clone()))
         .collect();
-    import_into(&Tree::default(), &named, tx, &ImportOptions::default(), ctx)
+    import_recording(&Tree::default(), &named, tx, &ImportOptions::default(), ctx)
+}
+
+/// What "Delete files after archiving" did.
+#[derive(Debug, Default)]
+struct SourcesMoved {
+    moved: u64,
+    kept: Vec<SkippedView>,
+}
+
+impl SourcesMoved {
+    fn keep(&mut self, path: &ArchivePath, reason: impl Into<String>) {
+        self.kept.push(SkippedView {
+            path: NameText::of(path.as_stored()),
+            reason: reason.into(),
+        });
+    }
+}
+
+/// Annex B.2.23 item 3, after the commit is published: move to the Recycle
+/// Bin or Trash each source `mochi_core::sources::check_removable` lets go
+/// (its archived copy read back and the source still matches it), then each
+/// folder it lets go once it is empty; keep, with the reason, everything
+/// else. Never deletes outright, and never fails the job: the commit stands
+/// whatever happens here.
+fn move_sources(
+    archive: &Path,
+    read: &ReadOptions,
+    entries: &[ImportedEntry<PathBuf>],
+    ctx: &JobContext<'_>,
+) -> SourcesMoved {
+    let mut out = SourcesMoved::default();
+    let checked = OsReadStorage::open(archive)
+        .map_err(MochiError::from)
+        .and_then(|src| check_removable(&src, read, entries, ctx));
+    let checked = match checked {
+        Ok(c) => c,
+        Err(e) => {
+            let why = format!(
+                "nothing was moved: the new archive could not be read back ({})",
+                e.message
+            );
+            for e in entries {
+                out.keep(&e.path, why.clone());
+            }
+            return out;
+        }
+    };
+    let bin = crate::trashbin::set_aside();
+    // Files first, in walk order; then folders, deepest first.
+    for c in checked.iter().filter(|c| c.kind == SourceKind::File) {
+        match &c.verdict {
+            Verdict::Keep(why) => out.keep(&c.path, why.clone()),
+            Verdict::Remove => match std::fs::symlink_metadata(&c.node) {
+                Ok(m) if m.is_file() => match bin(&c.node) {
+                    Ok(()) => out.moved += 1,
+                    Err(e) => out.keep(&c.path, format!("it could not be moved to the Bin: {e}")),
+                },
+                Ok(_) => out.keep(&c.path, "it is no longer a plain file"),
+                Err(e) => out.keep(&c.path, format!("it could not be looked at again: {e}")),
+            },
+        }
+    }
+    for c in checked
+        .iter()
+        .rev()
+        .filter(|c| c.kind == SourceKind::Directory)
+    {
+        match &c.verdict {
+            Verdict::Keep(why) => out.keep(&c.path, why.clone()),
+            Verdict::Remove => {
+                let empty = std::fs::symlink_metadata(&c.node)
+                    .ok()
+                    .filter(std::fs::Metadata::is_dir)
+                    .and_then(|_| std::fs::read_dir(&c.node).ok())
+                    .map(|mut d| d.next().is_none());
+                match empty {
+                    Some(true) => match bin(&c.node) {
+                        Ok(()) => out.moved += 1,
+                        Err(e) => {
+                            out.keep(&c.path, format!("it could not be moved to the Bin: {e}"))
+                        }
+                    },
+                    Some(false) => out.keep(&c.path, "it is not empty"),
+                    None => out.keep(&c.path, "it is no longer a plain folder"),
+                }
+            }
+        }
+    }
+    out
 }
 
 /// The directory holding `archive` and its file name.
@@ -1109,7 +1245,9 @@ fn done(
     import: &Import,
     removed: u64,
     opened: Result<crate::ipc::ArchiveSummary>,
+    sources: Option<SourcesMoved>,
 ) -> JobDone {
+    let sources = sources.unwrap_or_default();
     let (archive, reopen_error) = match opened {
         Ok(a) => (Some(a), None),
         Err(e) => (None, Some(IpcError::from(e))),
@@ -1131,6 +1269,8 @@ fn done(
                 reason: s.reason.clone(),
             })
             .collect(),
+        sources_moved: sources.moved,
+        sources_kept: sources.kept,
         durability_note: match &outcome.durability {
             PublishDurability::Durable => None,
             PublishDurability::DirectoryUnconfirmed(why) => Some(why.clone()),
@@ -1225,6 +1365,7 @@ mod tests {
             tar_compatible: false,
             passphrase: None,
             recovery_percent: None,
+            delete_sources: None,
         }
     }
 
@@ -1385,7 +1526,10 @@ mod tests {
         svc.validate(&create_request()).unwrap();
         // An archive that is not open.
         let e = svc
-            .validate(&JobRequest::AddToArchive { handle: 99 })
+            .validate(&JobRequest::AddToArchive {
+                handle: 99,
+                delete_sources: None,
+            })
             .unwrap_err();
         assert_eq!(e.code, ErrorCode::InvalidArgument);
         for keys in [
@@ -1495,6 +1639,7 @@ mod tests {
                 tar_compatible: true,
                 passphrase: None,
                 recovery_percent: None,
+                delete_sources: None,
             },
         )
         .unwrap();
@@ -1556,6 +1701,7 @@ mod tests {
                     tar_compatible: false,
                     passphrase: None,
                     recovery_percent: None,
+                    delete_sources: None,
                 },
             )
             .unwrap();
@@ -1662,7 +1808,10 @@ mod tests {
         token.cancel();
         let e = run(
             &fx.svc,
-            &JobRequest::AddToArchive { handle },
+            &JobRequest::AddToArchive {
+                handle,
+                delete_sources: None,
+            },
             &NullProgress,
             &token,
         )
@@ -1703,7 +1852,16 @@ mod tests {
         );
         let token = CancellationToken::new();
         let sink = CancelAfterFirstFile(token.clone());
-        let e = run(&fx.svc, &JobRequest::AddToArchive { handle }, &sink, &token).unwrap_err();
+        let e = run(
+            &fx.svc,
+            &JobRequest::AddToArchive {
+                handle,
+                delete_sources: None,
+            },
+            &sink,
+            &token,
+        )
+        .unwrap_err();
         assert_eq!(e.code, ErrorCode::Cancelled);
         assert_eq!(std::fs::read(&dest).unwrap(), before);
         assert_verifies(&dest);
@@ -1711,6 +1869,87 @@ mod tests {
     }
 
     // ---- add ----
+
+    /// Annex B.2.23 item 3: with "Delete files after archiving", every
+    /// source whose archived copy reads back goes to the Bin (never deleted)
+    /// once the commit is published, folders too once empty; the archive
+    /// holds it all, and the report counts what moved.
+    #[test]
+    fn b2_23_delete_after_archiving_moves_the_sources_to_the_bin() {
+        let fx = fixture();
+        let dest = fx.out.join("moved.mochi");
+        stage_ok(&fx.svc, &[fx.root.join("docs"), fx.root.join("loose.bin")]);
+        fx.svc.staging.set_destination(dest.clone());
+        let done = run_plain(
+            &fx.svc,
+            &JobRequest::CreateArchive {
+                preset: CompressionPreset::Balanced,
+                tar_compatible: false,
+                passphrase: None,
+                recovery_percent: None,
+                delete_sources: Some(true),
+            },
+        )
+        .unwrap();
+        let c = done.commit.unwrap();
+        assert_eq!(c.status, "LOCAL_COMMITTED");
+        // docs, docs/deep, two files in them, and loose.bin.
+        assert_eq!(c.sources_moved, 5, "{:?}", c.sources_kept);
+        assert!(c.sources_kept.is_empty(), "{:?}", c.sources_kept);
+        assert!(!fx.root.join("docs").exists());
+        assert!(!fx.root.join("loose.bin").exists());
+        // In the stand-in Bin, not gone.
+        assert!(crate::trashbin::test_bin().exists());
+        let state = state_of(&dest);
+        assert_eq!(file(&state, "docs/a.txt").unwrap(), b"alpha");
+        assert_eq!(
+            file(&state, "docs/deep/b.txt").unwrap(),
+            b"bravo bravo bravo"
+        );
+        assert_eq!(file(&state, "loose.bin").unwrap(), [7u8; 100]);
+        assert_verifies(&dest);
+    }
+
+    /// Off (the default) nothing is moved. On, a folder that still holds
+    /// something the archive did not take (a link, which is never stored) is
+    /// kept with the reason, while its files go.
+    #[cfg(unix)]
+    #[test]
+    fn b2_23_a_folder_holding_what_was_not_archived_is_kept() {
+        let fx = fixture();
+        let (_dest, done) = created(&fx);
+        assert_eq!(done.commit.as_ref().unwrap().sources_moved, 0);
+        assert!(fx.root.join("docs/a.txt").exists(), "off by default");
+        let handle = done.commit.unwrap().archive.unwrap().handle;
+
+        let keep = fx.root.join("keep");
+        put(&keep, "x.txt", b"x");
+        std::os::unix::fs::symlink("x.txt", keep.join("link")).unwrap();
+        stage_ok(&fx.svc, std::slice::from_ref(&keep));
+        let c = run_plain(
+            &fx.svc,
+            &JobRequest::AddToArchive {
+                handle,
+                delete_sources: Some(true),
+            },
+        )
+        .unwrap()
+        .commit
+        .unwrap();
+        assert_eq!(c.sources_moved, 1, "x.txt");
+        assert!(!keep.join("x.txt").exists());
+        assert!(
+            keep.join("link").symlink_metadata().is_ok(),
+            "the link stays"
+        );
+        assert_eq!(
+            c.sources_kept
+                .iter()
+                .map(|k| (k.path.text.as_str(), k.reason.as_str()))
+                .collect::<Vec<_>>(),
+            [("keep", "it is not empty")]
+        );
+    }
 
     #[test]
     fn add_makes_a_new_commit_and_the_old_snapshot_is_unchanged() {
@@ -1721,7 +1960,14 @@ mod tests {
         let changed = put(&fx.root, "loose.bin", b"changed");
         let fresh = put(&fx.root, "fresh.txt", b"fresh");
         stage_ok(&fx.svc, &[changed, fresh]);
-        let done = run_plain(&fx.svc, &JobRequest::AddToArchive { handle }).unwrap();
+        let done = run_plain(
+            &fx.svc,
+            &JobRequest::AddToArchive {
+                handle,
+                delete_sources: None,
+            },
+        )
+        .unwrap();
         let c = done.commit.unwrap();
         assert_eq!(c.operation, CommitOperation::Add);
         assert_eq!(c.status, "LOCAL_COMMITTED");
@@ -1769,7 +2015,14 @@ mod tests {
         assert_eq!(report.operation, CommitOperation::Comment);
         assert_eq!((report.files, report.removed), (0, 0));
         stage_ok(&fx.svc, &[fx.root.join("loose.bin")]);
-        run_plain(&fx.svc, &JobRequest::AddToArchive { handle }).unwrap();
+        run_plain(
+            &fx.svc,
+            &JobRequest::AddToArchive {
+                handle,
+                delete_sources: None,
+            },
+        )
+        .unwrap();
         set(None).unwrap();
         let info = |seq: u64| fx.svc.archives.info(handle, seq).unwrap().comment;
         assert_eq!(info(0), None);
@@ -1804,12 +2057,20 @@ mod tests {
                 tar_compatible: true,
                 passphrase: None,
                 recovery_percent: None,
+                delete_sources: None,
             },
         )
         .unwrap();
         let handle = done.commit.unwrap().archive.unwrap().handle;
         stage_ok(&fx.svc, &[fx.root.join("loose.bin")]);
-        let done = run_plain(&fx.svc, &JobRequest::AddToArchive { handle }).unwrap();
+        let done = run_plain(
+            &fx.svc,
+            &JobRequest::AddToArchive {
+                handle,
+                delete_sources: None,
+            },
+        )
+        .unwrap();
         assert!(done.commit.unwrap().archive.unwrap().profile.tar_compatible);
         assert_verifies(&dest);
     }
@@ -1821,7 +2082,14 @@ mod tests {
         let handle = done.commit.unwrap().archive.unwrap().handle;
         let before = std::fs::read(&dest).unwrap();
         // An empty staged set is refused at validation.
-        assert!(run_plain(&fx.svc, &JobRequest::AddToArchive { handle }).is_err());
+        assert!(run_plain(
+            &fx.svc,
+            &JobRequest::AddToArchive {
+                handle,
+                delete_sources: None
+            }
+        )
+        .is_err());
         assert_eq!(std::fs::read(&dest).unwrap(), before);
     }
 
@@ -1835,7 +2103,14 @@ mod tests {
         let link = fx.root.join("onlylink");
         std::os::unix::fs::symlink(fx.root.join("loose.bin"), &link).unwrap();
         stage_ok(&fx.svc, &[link]);
-        let e = run_plain(&fx.svc, &JobRequest::AddToArchive { handle }).unwrap_err();
+        let e = run_plain(
+            &fx.svc,
+            &JobRequest::AddToArchive {
+                handle,
+                delete_sources: None,
+            },
+        )
+        .unwrap_err();
         assert_eq!(e.code, ErrorCode::InvalidArgument);
         assert!(e.message.contains("nothing to add"));
         assert_eq!(std::fs::read(&dest).unwrap(), before);

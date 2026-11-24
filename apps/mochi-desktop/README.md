@@ -218,6 +218,12 @@ xvfb-run -a pnpm test     # Linux (apt: webkit2gtk-driver xvfb); on Windows: pnp
   MOCHI program is writing** (`compression-settings.json`, `wait_for_writer`, off when absent):
   Add, Delete and Comment then wait up to two minutes for another writer's lock
   (`speed::lock_wait`, passed as `WriterOptions::lock_wait`) instead of failing at once.
+- **Delete files after archiving (spec Annex B.2.23 item 3).** A per-job checkbox on New archive
+  (`.mochi` only) and Add, off by default (`delete_sources`). After the commit, `move_sources` in
+  `src/write.rs` asks `mochi_core::sources::check_removable` which sources may go (the archived
+  copy reads back and the source still hashes to it), moves those to the Bin through
+  `trashbin.rs` (files, then folders once empty), and reports `sources_moved` and
+  `sources_kept` with reasons. It never fails the job and never deletes outright.
 - **Searchability is not listed in a report while it means nothing.** In 1.0 it is always
   `UNSUPPORTED` (no search index exists); the report hides it unless it is required or has any
   other status (`check/messages.ts`, `isHidden`). The exported JSON keeps it.
