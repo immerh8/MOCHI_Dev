@@ -43,7 +43,8 @@ use mochi_core::publish::{
     ArchiveWriter, CommitOutcome, FileSource, PublishDurability, ReadOptions, TailRepair,
     Transaction, WriterOptions,
 };
-use mochi_core::sources::{check_removable, Verdict};
+use mochi_core::sources::check_removable;
+use mochi_core::storage::os::move_sources::{move_removable, MovedSources};
 use mochi_core::storage::os::{OsDir, OsReadStorage, OsSourceTree};
 use mochi_core::{ErrorCode, MochiError, Result};
 use tauri::DragDropEvent;
@@ -1067,86 +1068,43 @@ struct SourcesMoved {
     kept: Vec<SkippedView>,
 }
 
-impl SourcesMoved {
-    fn keep(&mut self, path: &ArchivePath, reason: impl Into<String>) {
-        self.kept.push(SkippedView {
-            path: NameText::of(path.as_stored()),
-            reason: reason.into(),
-        });
-    }
-}
-
 /// Annex B.2.23 item 3, after the commit is published: move to the Recycle
 /// Bin or Trash each source `mochi_core::sources::check_removable` lets go
 /// (its archived copy read back and the source still matches it), then each
-/// folder it lets go once it is empty; keep, with the reason, everything
-/// else. Never deletes outright, and never fails the job: the commit stands
-/// whatever happens here.
+/// folder it lets go once it is empty (`storage::os::move_sources`, shared
+/// with the command line); keep, with the reason, everything else. Never
+/// deletes outright, and never fails the job: the commit stands whatever
+/// happens here.
 fn move_sources(
     archive: &Path,
     read: &ReadOptions,
     entries: &[ImportedEntry<PathBuf>],
     ctx: &JobContext<'_>,
 ) -> SourcesMoved {
-    let mut out = SourcesMoved::default();
     let checked = OsReadStorage::open(archive)
         .map_err(MochiError::from)
         .and_then(|src| check_removable(&src, read, entries, ctx));
-    let checked = match checked {
-        Ok(c) => c,
-        Err(e) => {
-            let why = format!(
+    let done = match checked {
+        Ok(c) => move_removable(&c, crate::trashbin::set_aside().as_ref()),
+        Err(e) => MovedSources::all_kept(
+            entries.iter().map(|e| &e.path),
+            &format!(
                 "nothing was moved: the new archive could not be read back ({})",
                 e.message
-            );
-            for e in entries {
-                out.keep(&e.path, why.clone());
-            }
-            return out;
-        }
+            ),
+        ),
     };
-    let bin = crate::trashbin::set_aside();
-    // Files first, in walk order; then folders, deepest first.
-    for c in checked.iter().filter(|c| c.kind == SourceKind::File) {
-        match &c.verdict {
-            Verdict::Keep(why) => out.keep(&c.path, why.clone()),
-            Verdict::Remove => match std::fs::symlink_metadata(&c.node) {
-                Ok(m) if m.is_file() => match bin(&c.node) {
-                    Ok(()) => out.moved += 1,
-                    Err(e) => out.keep(&c.path, format!("it could not be moved to the Bin: {e}")),
-                },
-                Ok(_) => out.keep(&c.path, "it is no longer a plain file"),
-                Err(e) => out.keep(&c.path, format!("it could not be looked at again: {e}")),
-            },
-        }
+    SourcesMoved {
+        moved: done.moved,
+        kept: done
+            .kept
+            .into_iter()
+            .map(|(path, reason)| SkippedView {
+                path: NameText::of(path.as_stored()),
+                reason,
+            })
+            .collect(),
     }
-    for c in checked
-        .iter()
-        .rev()
-        .filter(|c| c.kind == SourceKind::Directory)
-    {
-        match &c.verdict {
-            Verdict::Keep(why) => out.keep(&c.path, why.clone()),
-            Verdict::Remove => {
-                let empty = std::fs::symlink_metadata(&c.node)
-                    .ok()
-                    .filter(std::fs::Metadata::is_dir)
-                    .and_then(|_| std::fs::read_dir(&c.node).ok())
-                    .map(|mut d| d.next().is_none());
-                match empty {
-                    Some(true) => match bin(&c.node) {
-                        Ok(()) => out.moved += 1,
-                        Err(e) => {
-                            out.keep(&c.path, format!("it could not be moved to the Bin: {e}"))
-                        }
-                    },
-                    Some(false) => out.keep(&c.path, "it is not empty"),
-                    None => out.keep(&c.path, "it is no longer a plain folder"),
-                }
-            }
-        }
-    }
-    out
 }
 
 /// The directory holding `archive` and its file name.

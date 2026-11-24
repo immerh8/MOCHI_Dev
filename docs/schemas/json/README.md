@@ -36,6 +36,7 @@ holds the shared definitions.
 | `health-policy-v1.schema.json` | the file `health --policy` reads (an input) | — | `schema: "mochi-health-policy-v1"` | frozen |
 | `local-heads-v1.schema.json` | `<state dir>/heads.json` | `record_waiting` | `version: 1` | frozen |
 | `cli-commit.schema.json` | `create`, `append` (also `append --truncate-tail` with nothing to commit) | `emit_commit`, `append` | `schema: "mochi-cli-commit-v1"` | frozen at the 1.0 flip (W20) |
+| `cli-commit-v2.schema.json` | `create`, `append` with `--move-sources-to-bin` (spec Annex B.2.23) | `emit_commit` | `schema: "mochi-cli-commit-v2"` | frozen when written (2026-11-24) |
 | `cli-maintenance.schema.json` | `snapshot retain\|expire\|release`, `checkpoint`, `rekey --add-passphrase\|--remove-passphrase` | `commit_maintenance` | `schema: "mochi-cli-maintenance-v1"` | frozen at the 1.0 flip (W20) |
 | `cli-list.schema.json` | `list` | `list_cmd` | `schema: "mochi-cli-list-v1"` | frozen at the 1.0 flip (W20) |
 | `cli-snapshot-list.schema.json` | `snapshot list` | `snapshot_list` | `schema: "mochi-cli-snapshot-list-v1"` | frozen at the 1.0 flip (W20) |

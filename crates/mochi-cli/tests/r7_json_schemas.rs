@@ -23,7 +23,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-use mochi_cli::{exit_code_for, run};
+use mochi_cli::exit_code_for;
 use mochi_core::report::{Report, Severity};
 use mochi_core::status::{Dimension, Status, VerificationLevel};
 use mochi_core::ErrorCode;
@@ -45,6 +45,7 @@ const SCHEMAS: &[&str] = &[
     "health-policy-v1.schema.json",
     "local-heads-v1.schema.json",
     "cli-commit.schema.json",
+    "cli-commit-v2.schema.json",
     "cli-maintenance.schema.json",
     "cli-list.schema.json",
     "cli-snapshot-list.schema.json",
@@ -162,6 +163,25 @@ fn valid(schema: &str, v: &Value, what: &str) {
 
 // ---- running the CLI ------------------------------------------------------------
 
+/// The stand-in Bin: move `path` into a folder of this test process under a
+/// free name.
+fn test_bin(path: &Path) -> std::io::Result<()> {
+    let dir = std::env::temp_dir().join(format!("mochi-r7-bin-{}", std::process::id()));
+    fs::create_dir_all(&dir)?;
+    let name = path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned();
+    for n in 0..1000 {
+        let to = dir.join(format!("{n}-{name}"));
+        if !to.exists() {
+            return fs::rename(path, to);
+        }
+    }
+    Err(std::io::Error::other("no free name in the stand-in bin"))
+}
+
 struct Out {
     code: u8,
     stdout: String,
@@ -172,7 +192,9 @@ fn mochi<S: AsRef<str>>(args: &[S]) -> Out {
     let mut argv: Vec<OsString> = vec!["mochi".into()];
     argv.extend(args.iter().map(|a| OsString::from(a.as_ref())));
     let (mut out, mut err) = (Vec::new(), Vec::new());
-    let code = run(argv, &mut out, &mut err);
+    // `--move-sources-to-bin` moves into a folder of this test process, never
+    // into the machine's Recycle Bin or Trash.
+    let code = mochi_cli::run_with_bin(argv, &mut out, &mut err, std::sync::Arc::new(test_bin));
     Out {
         code,
         stdout: String::from_utf8(out).expect("JSON output is UTF-8"),
@@ -480,7 +502,7 @@ fn command_output_schemas_require_their_in_band_tag() {
         }
         seen += 1;
     }
-    assert_eq!(seen, 15, "the fifteen command-output schemas");
+    assert_eq!(seen, 16, "the sixteen command-output schemas");
 }
 
 // ---- enumerations ------------------------------------------------------------------
@@ -890,6 +912,29 @@ fn corpus() -> Vec<(&'static str, Value)> {
     );
     assert_eq!(v["deleted"].as_array().unwrap().len(), 2);
     keep("cli-commit.schema.json", v);
+
+    // --move-sources-to-bin: commit v2 (Annex B.2.23), one folder moved whole
+    // and one kept because it still holds what was not archived.
+    fs::create_dir_all(a.p("tobin/inner")).unwrap();
+    fs::write(a.p("tobin/inner/x.txt"), b"x").unwrap();
+    fs::create_dir_all(a.p("stays")).unwrap();
+    fs::write(a.p("stays/y.txt"), b"y").unwrap();
+    #[cfg(unix)]
+    std::os::unix::fs::symlink("y.txt", a.p("stays/link")).unwrap();
+    let (_, v) = ok(
+        "cli-commit-v2.schema.json",
+        &a.g(&[
+            "create",
+            &a.s("moved.mochi"),
+            &a.s("tobin"),
+            &a.s("stays"),
+            "--move-sources-to-bin",
+        ]),
+    );
+    assert!(!a.p("tobin").exists());
+    #[cfg(unix)]
+    assert_eq!(v["sources_kept"][0]["reason"], "it is not empty");
+    keep("cli-commit-v2.schema.json", v);
 
     // An interrupted write's tail truncated, with nothing else to commit.
     let torn = a.copy_r8("core-interrupted-after-data");

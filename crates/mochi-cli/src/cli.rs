@@ -96,6 +96,13 @@ pub struct PendingArgs {
 pub struct CreateArgs {
     /// The archive to create. It must not exist; nothing is ever replaced.
     pub archive: PathBuf,
+    /// After the commit, move each input to the Recycle Bin or Trash, but
+    /// only once its copy in the new archive reads back and still matches it
+    /// (spec Annex B.2.23 item 3); a folder goes once it is empty. Anything
+    /// that cannot go (changed, not read back, no Bin on this system) is
+    /// kept and listed, exit 2. Nothing is ever deleted outright.
+    #[arg(long)]
+    pub move_sources_to_bin: bool,
     /// Files and directories to add. Each becomes a top-level entry named
     /// after its last component.
     #[arg(num_args = 0..)]
@@ -155,6 +162,13 @@ pub struct CreateArgs {
 pub struct AppendArgs {
     /// The archive to append a commit to.
     pub archive: PathBuf,
+    /// After the commit, move each input to the Recycle Bin or Trash, but
+    /// only once its copy in the new archive reads back and still matches it
+    /// (spec Annex B.2.23 item 3); a folder goes once it is empty. Anything
+    /// that cannot go (changed, not read back, no Bin on this system) is
+    /// kept and listed, exit 2. Nothing is ever deleted outright.
+    #[arg(long)]
+    pub move_sources_to_bin: bool,
     /// Files and directories to add or replace (top-level entries named
     /// after their last component).
     #[arg(num_args = 0..)]

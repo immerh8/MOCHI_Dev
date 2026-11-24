@@ -1168,6 +1168,10 @@ pub use find::OsFindTree;
 
 pub mod history;
 
+// ---- Moving archived sources to the Bin (Annex B.2.23 item 3) ---------------
+
+pub mod move_sources;
+
 fn issue(issues: &mut Vec<AttributeIssue>, attribute: AttributeKind, reason: impl ToString) {
     issues.push(AttributeIssue {
         attribute,

@@ -23,7 +23,7 @@ use mochi_core::health::{
     self, AnchorRef, CurrentHead, EvidenceCommand, EvidenceHead, EvidenceRecord, HealthPolicy,
     Inputs, EVIDENCE_SCHEMA,
 };
-use mochi_core::import::{import_into, ImportOptions, SourceKind};
+use mochi_core::import::{import_recording, ImportOptions, ImportedEntry, SourceKind};
 use mochi_core::job::{CancellationToken, JobContext, NullProgress};
 use mochi_core::migrate::{self, MigrateOptions};
 use mochi_core::object::{ArchiveId, OsIds};
@@ -39,8 +39,11 @@ use mochi_core::report::{Finding, Report, Severity};
 use mochi_core::restore::{restore_selected, ExceptionKind, RestoreOptions, RestoreReport};
 use mochi_core::salvage::SalvageOptions;
 use mochi_core::search::{search, FullText, PathMatch, Query, SnapshotScope};
+use mochi_core::sources::check_removable;
 use mochi_core::status::{Dimension, Status, VerificationLevel};
 use mochi_core::storage::os::find::normalize_scopes;
+use mochi_core::storage::os::move_sources::{move_removable, MovedSources};
+use mochi_core::storage::os::SetAside;
 use mochi_core::storage::os::WindowsDirectoryFlush;
 use mochi_core::storage::os::{
     OsDir, OsFindTree, OsReadStorage, OsRestoreDir, OsSourceTree, OsStorage,
@@ -71,6 +74,9 @@ pub struct Env<'a> {
     pub flush: WindowsDirectoryFlush,
     /// `--wait-for-lock`: how long an append waits for another writer.
     pub lock_wait: Option<std::time::Duration>,
+    /// Where `--move-sources-to-bin` moves a source: the Recycle Bin or
+    /// Trash (`mochi_cli::run`), or a folder (`mochi_cli::run_with_bin`, tests).
+    pub set_aside: std::sync::Arc<SetAside>,
     pub out: &'a mut dyn Write,
     pub err: &'a mut dyn Write,
     pub read: ReadOptions,
@@ -221,6 +227,29 @@ impl Env<'_> {
         }
     }
 
+    /// `--move-sources-to-bin` (Annex B.2.23 item 3), after the commit is
+    /// published: decide from the new head which inputs may go and move
+    /// them. Never fails the command: the commit stands.
+    fn move_sources(&mut self, archive: &Path, imported: &mut Imported) {
+        let (progress, cancel) = job();
+        let ctx = JobContext {
+            progress: &progress,
+            cancel: &cancel,
+        };
+        let checked = open_archive(archive)
+            .and_then(|s| check_removable(&s, &self.read, &imported.entries, &ctx));
+        imported.moved = Some(match checked {
+            Ok(c) => move_removable(&c, self.set_aside.as_ref()),
+            Err(e) => MovedSources::all_kept(
+                imported.entries.iter().map(|e| &e.path),
+                &format!(
+                    "nothing was moved: the new archive could not be read back ({})",
+                    e.message
+                ),
+            ),
+        });
+    }
+
     /// Record a head this client saw, as a later freshness anchor (D8).
     /// Failing to record is a warning, never a failure of the command.
     fn remember(
@@ -315,6 +344,9 @@ fn entry_kind(k: EntryKind) -> &'static str {
 // decision 2026-10-14). Each names `docs/schemas/json/cli-<name>.schema.json`.
 // They freeze at the 1.0 flip (W20), not before.
 const SCHEMA_COMMIT: &str = "mochi-cli-commit-v1";
+/// `create` / `append` with `--move-sources-to-bin` (Annex B.2.23): v1 plus
+/// `sources_moved` and `sources_kept`.
+const SCHEMA_COMMIT_V2: &str = "mochi-cli-commit-v2";
 const SCHEMA_MAINTENANCE: &str = "mochi-cli-maintenance-v1";
 const SCHEMA_LIST: &str = "mochi-cli-list-v1";
 const SCHEMA_SNAPSHOT_LIST: &str = "mochi-cli-snapshot-list-v1";
@@ -359,6 +391,10 @@ fn print_findings(env: &mut Env<'_>, findings: &[Finding]) {
 struct Imported {
     import: mochi_core::import::Import,
     deleted: Vec<ArchivePath>,
+    /// Where each imported entry came from (for `--move-sources-to-bin`).
+    entries: Vec<ImportedEntry<std::path::PathBuf>>,
+    /// What `--move-sources-to-bin` did, once the commit is published.
+    moved: Option<MovedSources>,
 }
 
 fn gather(
@@ -373,7 +409,7 @@ fn gather(
     for i in inputs {
         named.push(tree.input(i)?);
     }
-    let import = import_into(
+    let (import, entries) = import_recording(
         &tree,
         &named,
         tx,
@@ -382,7 +418,12 @@ fn gather(
         },
         ctx,
     )?;
-    Ok(Imported { import, deleted })
+    Ok(Imported {
+        import,
+        deleted,
+        entries,
+        moved: None,
+    })
 }
 
 fn emit_commit(
@@ -399,7 +440,8 @@ fn emit_commit(
         PublishDurability::Durable => None,
         PublishDurability::DirectoryUnconfirmed(why) => Some(why.clone()),
     };
-    let code = if i.complete() && unconfirmed.is_none() {
+    let kept_sources = imported.moved.as_ref().is_some_and(|m| !m.kept.is_empty());
+    let code = if i.complete() && unconfirmed.is_none() && !kept_sources {
         exit::OK
     } else {
         exit::DEGRADED
@@ -436,7 +478,27 @@ fn emit_commit(
             "truncation": truncation.map(|t| findings_json(&t.findings())),
             "exit_code": code,
         });
-        env.emit_tagged(SCHEMA_COMMIT, v);
+        match &imported.moved {
+            // v1 is frozen (W20): the move result is commit v2 (Annex B.2.23).
+            Some(m) => {
+                let mut v = v;
+                if let Value::Object(o) = &mut v {
+                    o.insert("sources_moved".into(), json!(m.moved));
+                    let kept: Vec<Value> = m
+                        .kept
+                        .iter()
+                        .map(|(p, why)| {
+                            let mut f = path_fields(p.as_stored());
+                            f.insert("reason".into(), json!(why));
+                            Value::Object(f)
+                        })
+                        .collect();
+                    o.insert("sources_kept".into(), Value::Array(kept));
+                }
+                env.emit_tagged(SCHEMA_COMMIT_V2, v);
+            }
+            None => env.emit_tagged(SCHEMA_COMMIT, v),
+        }
     } else {
         if let Some(t) = truncation {
             env.line("tail truncated before appending:");
@@ -475,6 +537,16 @@ fn emit_commit(
                 s.reason
             ));
         }
+        if let Some(m) = &imported.moved {
+            env.line(format!(
+                "moved {} source{} to the Recycle Bin or Trash (nothing was deleted outright)",
+                m.moved,
+                if m.moved == 1 { "" } else { "s" }
+            ));
+            for (p, why) in &m.kept {
+                env.line(format!("kept {}: {why}", text(p.as_stored())));
+            }
+        }
         if let Some(why) = &unconfirmed {
             env.line(format!(
                 "degraded: the new file's directory entry is not confirmed durable ({why})"
@@ -512,7 +584,7 @@ pub fn create(env: &mut Env<'_>, a: &CreateArgs) -> Result<u8> {
     if let Some(text) = comment_arg(a.comment.as_deref(), a.comment_file.as_deref())? {
         tx.set_comment(text);
     }
-    let imported = gather(&a.inputs, tx, a.max_bytes, Vec::new(), &ctx)?;
+    let mut imported = gather(&a.inputs, tx, a.max_bytes, Vec::new(), &ctx)?;
     // The passphrases the key envelopes wrap the data key under: the named
     // sources, else a prompt asked twice. Nothing is created without one.
     let mut read = env.read.clone();
@@ -566,6 +638,9 @@ pub fn create(env: &mut Env<'_>, a: &CreateArgs) -> Result<u8> {
         outcome.commit_id,
         &outcome.durability,
     );
+    if a.move_sources_to_bin {
+        env.move_sources(&a.archive, &mut imported);
+    }
     Ok(emit_commit(
         env, "create", &a.archive, archive_id, &outcome, &imported, None,
     ))
@@ -630,7 +705,7 @@ pub fn append(env: &mut Env<'_>, a: &AppendArgs) -> Result<u8> {
             deleted.push(p);
         }
     }
-    let imported = gather(&a.inputs, tx, a.max_bytes, deleted, &ctx)?;
+    let mut imported = gather(&a.inputs, tx, a.max_bytes, deleted, &ctx)?;
     let archive_id = w.archive_id();
     if imported.import.transaction.is_empty() {
         if let Some(t) = &truncation {
@@ -666,6 +741,9 @@ pub fn append(env: &mut Env<'_>, a: &AppendArgs) -> Result<u8> {
         outcome.commit_id,
         &outcome.durability,
     );
+    if a.move_sources_to_bin {
+        env.move_sources(&a.archive, &mut imported);
+    }
     Ok(emit_commit(
         env,
         "append",
