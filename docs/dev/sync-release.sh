@@ -16,6 +16,8 @@ EXCLUDE=(
   docs/README.md
   docs/dev/
   docs/ratification/
+  # Checks the drafts in docs/ratification/ against the code, so it stays too.
+  crates/mochi-cli/tests/ratification_drafts.rs
 )
 
 dest=${1:?usage: $0 <path-to-Sepiolina-MOCHI-checkout>}
