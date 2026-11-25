@@ -63,7 +63,7 @@ cargo run -p mochi-cli -- verify fixtures/golden/c5/<file>.mochi --json --no-loc
 R6 vectors come from an independent Python implementation; CI regenerates them (needs `pip install blake3==1.0.8`):
 
 ```bash
-python3 docs/ratification/R6-vectors/gen_vectors.py | diff - docs/ratification/R6-vectors/vectors.json
+python3 fixtures/R6-vectors/gen_vectors.py | diff - fixtures/R6-vectors/vectors.json
 ```
 
 Desktop (React + TypeScript + Vite, pnpm, Node 24 LTS — plan decision O1; D0–D6 and D8 built, D7 partly (installers, updater, accessibility, crash log, bundled user guide; the owner-held release checklist is not run), `apps/mochi-desktop/README.md`). On Linux the workspace build needs webkit2gtk 4.1 (`libwebkit2gtk-4.1-dev` and companions, listed in that README):

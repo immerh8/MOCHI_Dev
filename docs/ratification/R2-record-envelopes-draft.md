@@ -222,7 +222,7 @@ identity, listed in the same column because §1 checks it the same way. There is
    signature and vectors, before a writer emits one. Recorded as a precondition in
    plan W9 (`docs/next-work-plan.md`). **Done for parity (2026-10-12):** encoding 1,
    signature `MOCHI2-PARITY\0\0\0`, registered in B.2.2 with D21; vectors in
-   `R6-vectors/` and the golden reject `b2/reject-envelope-payload-encoding-kind.bin`.
+   `fixtures/R6-vectors/` and the golden reject `b2/reject-envelope-payload-encoding-kind.bin`.
 4. **The B.2.6 evidence audit belongs to R8.** "Valid and reject vectors for every
    CDDL rule and every D11 obligation, in both encodings" is checked when the golden
    set R8 is assembled, not in this draft. §8.3's "evidence pending" marker stays until
