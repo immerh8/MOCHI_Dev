@@ -47,7 +47,7 @@ A report shows separate dimensions, and an overall result never hides a failing 
 | recoverability | Files can be reassembled and match their hashes |
 | searchability | Search index completeness |
 | freshness | The archive's head is the one you expect (see below) |
-| retention_compliance | Retention policy is satisfied |
+| retention_compliance | Every snapshot the archive's own retention settings keep (not expired, or on hold) is present and restorable. A local check: it says nothing about other copies |
 | key_availability | The key for an encrypted archive opens it |
 
 The status values (spec §20.4):
@@ -75,7 +75,7 @@ Example from a plain archive (these lines are from a real run):
   recoverability        PASS         required
   searchability         UNSUPPORTED
   freshness             PASS         required
-  retention_compliance  UNSUPPORTED
+  retention_compliance  PASS
   key_availability      PASS
 data objects: 3 of 3 checked (53 of 53 stored bytes)
 result: PASS (exit 0)
@@ -103,8 +103,11 @@ whose `dimensions` and `exit_code` are the same as the text.
   archive at the same path is simply first sight.
 * **That search is complete.** Searchability is `UNSUPPORTED`. `mochi search` prints its own coverage; zero
   matches with partial coverage is not "no matches".
-* **That storage is durable,** or that retention rules are met (durability `UNKNOWN`,
-  retention compliance `UNSUPPORTED`).
+* **That storage is durable** (durability `UNKNOWN` in `verify`). `mochi health` shows what
+  this computer recorded when the current version was written: `DEGRADED` at best, because
+  one copy on one disk is never more than that.
+* **That other copies exist or keep your retention rules.** Retention compliance checks only
+  this archive, against its own expiry and holds, and only at the `restoration` level.
 * **Anything about bytes it did not read.** Sampling and level choice decide the coverage; the
   report says how many objects and bytes were checked of how many. A `stored`-level run says
   nothing about whether the content decodes.
